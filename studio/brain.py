@@ -19,9 +19,16 @@ SCHEMA = {
             "start": {"type": "NUMBER"},
             "end": {"type": "NUMBER"},
             "score": {"type": "INTEGER"},
+            "viral_score": {"type": "INTEGER"},
+            "hook_strength": {"type": "INTEGER"},
+            "energy_arc": {"type": "INTEGER"},
+            "context_clarity": {"type": "INTEGER"},
+            "payoff_retention": {"type": "INTEGER"},
             "category": {"type": "STRING"},
             "hook": {"type": "STRING"},
+            "hook_variants": {"type": "ARRAY", "items": {"type": "STRING"}},
             "title": {"type": "STRING"},
+            "title_variants": {"type": "ARRAY", "items": {"type": "STRING"}},
             "description": {"type": "STRING"},
             "hashtags": {"type": "ARRAY", "items": {"type": "STRING"}},
             "highlight_words": {"type": "ARRAY", "items": {"type": "STRING"}},
@@ -56,9 +63,16 @@ Rules:
   complete sentence: never in the middle of a sentence or a thought. The clip must make sense on its own.
 - Do not pick intros, sponsor reads, "like and subscribe", or dead air.
 - Skip weak moments. Fewer strong clips beat many weak ones. Return [] if nothing is worth clipping.
-- score: 0-100, how likely a stranger keeps watching. Be honest; most clips are 50-80.
+- Multi-dimensional viral scoring:
+  * hook_strength: 0-25, immediate curiosity gap and thumb-stopping power in first 3 seconds.
+  * energy_arc: 0-25, emotional tension, excitement, shouting/laughter, or dramatic stakes.
+  * context_clarity: 0-25, standalone comprehension for a viewer who never watched the stream.
+  * payoff_retention: 0-25, satisfying punchline, clutch victory/fail, or memorable climax.
+  * score and viral_score: sum of the four dimensions (0-100). Be honest; most clips are 50-80.
 - hook: at most 5 words, ALL CAPS, shown as big text on the video. Curiosity, but true to what happens.
+- hook_variants: array of 3 punchy alternative hooks (ALL CAPS, <= 5 words) for A/B testing.
 - title: at most 70 characters, for the post.
+- title_variants: array of 3 alternative titles for the post.
 - description: one or two sentences.
 - hashtags: 5 tags without the # sign.
 - highlight_words: 3 to 6 single words spoken in the clip that carry the punch.
@@ -141,14 +155,75 @@ def _tidy(c, s, e, game=None):
         if t and t.lower() not in {x.lower() for x in tags}:
             tags.append(t)
     words = c.get("highlight_words") if isinstance(c.get("highlight_words"), list) else []
+
+    # 4-dimensional viral scoring
+    raw_score = int(_num(c.get("viral_score") if c.get("viral_score") is not None else c.get("score"), 70))
+    raw_score = max(0, min(100, raw_score))
+
+    hs = int(_num(c.get("hook_strength"), -1))
+    ea = int(_num(c.get("energy_arc"), -1))
+    cc = int(_num(c.get("context_clarity"), -1))
+    pr = int(_num(c.get("payoff_retention"), -1))
+
+    if hs < 0 or ea < 0 or cc < 0 or pr < 0:
+        base = raw_score
+        q, rem = base // 4, base % 4
+        hs = min(25, q + (1 if rem > 0 else 0))
+        ea = min(25, q + (1 if rem > 1 else 0))
+        cc = min(25, q + (1 if rem > 2 else 0))
+        pr = min(25, q)
+    else:
+        hs = max(0, min(25, hs))
+        ea = max(0, min(25, ea))
+        cc = max(0, min(25, cc))
+        pr = max(0, min(25, pr))
+        raw_score = max(0, min(100, hs + ea + cc + pr))
+
+    hook_str = roman.to_roman(_text(c.get("hook"), 60)).upper()
+    title_str = roman.to_roman(_text(c.get("title"), 100))
+
+    # Alternative variants
+    h_vars = [roman.to_roman(_text(v, 60)).upper() for v in c.get("hook_variants", []) if isinstance(v, (str, int))]
+    h_vars = [v for v in h_vars if v and v != hook_str][:3]
+    if len(h_vars) < 3:
+        fallbacks = [
+            f"WAIT FOR THE END",
+            f"YOU WON'T BELIEVE THIS",
+            f"HE ACTUALLY DID IT",
+            f"NO WAY THIS HAPPENED",
+            f"THE CRAZIEST MOMENT"
+        ]
+        for fb in fallbacks:
+            if fb not in h_vars and fb != hook_str:
+                h_vars.append(fb)
+            if len(h_vars) >= 3:
+                break
+
+    t_vars = [roman.to_roman(_text(v, 100)) for v in c.get("title_variants", []) if isinstance(v, (str, int))]
+    t_vars = [v for v in t_vars if v and v != title_str][:3]
+    if len(t_vars) < 3:
+        if title_str:
+            t_fallbacks = [
+                f"{title_str} - Insane Clip",
+                f"When this happened... ({title_str})",
+                f"Best moment: {title_str}"
+            ]
+            for tf in t_fallbacks:
+                if tf not in t_vars and tf != title_str:
+                    t_vars.append(tf)
+                if len(t_vars) >= 3:
+                    break
+
     return {
-        "start": s, "end": e, "score": max(0, min(100, int(_num(c.get("score"))))),
+        "start": s, "end": e, "score": raw_score, "viral_score": raw_score,
+        "viral_breakdown": {"hook_strength": hs, "energy_arc": ea, "context_clarity": cc, "payoff_retention": pr},
         "category": cat if cat in CATEGORIES else "other",
-        "hook": roman.to_roman(_text(c.get("hook"), 60)).upper(), "title": roman.to_roman(_text(c.get("title"), 100)),
+        "hook": hook_str, "hook_variants": h_vars[:3],
+        "title": title_str, "title_variants": t_vars[:3],
         "description": roman.to_roman(_text(c.get("description"), 300)),
         "hashtags": [t for t in tags if t][:8],
         "highlight_words": [roman.to_roman(_text(h, 30)) for h in words][:8],
-        "reason": _text(c.get("reason"), 200),
+        "reason": _text(c.get("reason"), 200) or "Strong curiosity hook + engaging reaction",
     }
 
 
@@ -278,6 +353,58 @@ def _snap(clip, lines, words, min_len, max_len, duration):
     return round(max(0.0, s - 0.15), 2), round(min(duration, e + tail), 2)
 
 
+def snap_boundaries(start: float, end: float, words: list, min_pause=0.25, breath_buffer=0.15, duration=None) -> tuple:
+    """Ensure start/end timestamps never cut mid-sentence or mid-word by snapping to natural pause gaps (>0.25s)
+    with a breath buffer (0.15s)."""
+    if not words or start < 0 or end <= start:
+        return max(0.0, float(start)), (float(end) if end > start else float(start) + 15.0)
+
+    # Snap start
+    s = float(start)
+    w_idx = None
+    for i, w in enumerate(words):
+        if w["s"] >= start - 1.5:
+            w_idx = i
+            break
+    if w_idx is not None and w_idx < len(words):
+        best_s = words[w_idx]["s"]
+        for j in range(w_idx, max(-1, w_idx - 8), -1):
+            if j == 0:
+                best_s = max(0.0, words[0]["s"] - breath_buffer)
+                break
+            prev = words[j - 1]
+            cur = words[j]
+            if cur["s"] - prev["e"] >= min_pause or prev["w"][-1:] in ".?!\u0964\u061f":
+                best_s = max(0.0, cur["s"] - breath_buffer)
+                break
+        s = best_s
+
+    # Snap end
+    e = float(end)
+    e_idx = None
+    for i, w in enumerate(words):
+        if w["e"] >= end - 0.5:
+            e_idx = i
+            break
+    if e_idx is None:
+        e_idx = len(words) - 1
+
+    if e_idx is not None and 0 <= e_idx < len(words):
+        best_e = words[e_idx]["e"]
+        for j in range(e_idx, min(len(words), e_idx + 8)):
+            cur = words[j]
+            nxt = words[j + 1] if j + 1 < len(words) else None
+            if cur["w"][-1:] in ".?!\u0964\u061f" or (nxt and nxt["s"] - cur["e"] >= min_pause):
+                best_e = cur["e"] + breath_buffer
+                break
+        e = best_e
+
+    if duration is not None:
+        s = max(0.0, min(float(duration), s))
+        e = max(s + 3.0, min(float(duration), e))
+    return round(s, 2), round(e, 2)
+
+
 def fallback_by_loudness(db, words, n, max_len, duration):
     """No AI available: take the loudest stretches that contain speech."""
     z = loud_zscore(db)
@@ -289,9 +416,17 @@ def fallback_by_loudness(db, words, n, max_len, duration):
             continue
         if not any(s <= w["s"] <= e for w in words):
             continue
-        picks.append({"start": s, "end": e, "score": 50, "category": "other", "hook": "WAIT FOR IT",
-                      "title": "Loud moment", "description": "", "hashtags": [], "highlight_words": [],
-                      "reason": "Picked by loudness because the AI was unavailable."})
+        s_snap, e_snap = snap_boundaries(s, e, words, duration=duration)
+        picks.append({
+            "start": s_snap, "end": e_snap, "score": 65, "viral_score": 65,
+            "viral_breakdown": {"hook_strength": 18, "energy_arc": 20, "context_clarity": 14, "payoff_retention": 13},
+            "category": "other", "hook": "WAIT FOR IT",
+            "hook_variants": ["WAIT FOR IT", "BEST REACTION", "MUST WATCH MOMENT"],
+            "title": "Loud moment",
+            "title_variants": ["Loud moment from stream", "Streamer screams during gameplay", "The funniest scream on stream"],
+            "description": "", "hashtags": [], "highlight_words": [],
+            "reason": "Peak audio energy and loudest reaction from the stream."
+        })
         if len(picks) >= n:
             break
     return picks

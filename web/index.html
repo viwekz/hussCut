@@ -870,6 +870,164 @@ dialog[open]{animation:fadein .16s ease}
 #stageSplit{width:100%;height:100%;display:grid;place-items:center;padding:12px 0}
 #stageSplit canvas{width:auto;height:calc(100vh - 120px);max-width:92%;aspect-ratio:9/16;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);background:#000;display:block}
 
+
+/* ---------- NLE Creator Studio (CapCut / Linear inspired) ---------- */
+dialog#clipdlg{
+  max-width:min(96vw,1560px);width:min(96vw,1560px);height:min(94vh,960px);
+  border-radius:16px;border:1px solid rgba(255,255,255,.09);background:#13100E;color:#F5EFEB;
+  box-shadow:0 32px 100px rgba(0,0,0,.75);overflow:hidden;padding:0;
+}
+.nle-studio{display:flex;flex-direction:column;width:100%;height:100%;background:#13100E;color:#F5EFEB}
+.nle-topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:#181310;flex:none;
+}
+.nle-topbar .title-group{display:flex;align-items:center;gap:10px;min-width:0}
+.nle-topbar h2{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nle-badge{
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(255,139,51,.2);color:#FFB27A;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+}
+.nle-badge.fire{background:rgba(255,75,43,.22);color:#FF6B55}
+.nle-badge.volt{background:rgba(255,215,0,.22);color:#FFD700}
+.nle-topbar .actions{display:flex;align-items:center;gap:8px}
+
+.nle-body{display:grid;grid-template-columns:290px minmax(360px,1fr) 350px;flex:1;min-height:0;overflow:hidden}
+
+/* Left Panel */
+.nle-left{border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;min-height:0;background:#16110E}
+.nle-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.08);background:#1A1411;padding:4px}
+.nle-tab{
+  flex:1;border:0;background:transparent;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;
+  padding:6px;border-radius:6px;cursor:pointer;text-align:center;transition:all .15s ease;
+}
+.nle-tab:hover{color:#fff;background:rgba(255,255,255,.04)}
+.nle-tab.on{background:var(--brand);color:var(--brand-ink)}
+.nle-panel-scroll{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+
+/* Clip list in bin */
+.nle-clip-card{
+  display:flex;gap:10px;padding:8px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid transparent;
+  cursor:pointer;transition:all .15s ease;
+}
+.nle-clip-card:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1)}
+.nle-clip-card.on{background:rgba(255,139,51,.15);border-color:var(--brand)}
+.nle-clip-thumb{width:64px;aspect-ratio:9/16;border-radius:6px;background:#000;object-fit:cover;flex:none}
+.nle-clip-info{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.nle-clip-title{font-size:12px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nle-clip-reason{font-size:11px;color:rgba(255,255,255,.5);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Center Canvas */
+.nle-center{display:flex;flex-direction:column;min-height:0;background:#0E0B09;position:relative}
+.nle-center-top{
+  display:flex;align-items:center;justify-content:space-between;padding:8px 14px;
+  background:#14100E;border-bottom:1px solid rgba(255,255,255,.08);gap:10px;flex-wrap:wrap;
+}
+.nle-pill-group{display:flex;gap:4px;background:rgba(255,255,255,.06);padding:3px;border-radius:8px}
+.nle-pill{
+  border:0;background:transparent;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;
+  padding:3px 9px;border-radius:6px;cursor:pointer;transition:all .15s ease;
+}
+.nle-pill:hover{color:#fff}
+.nle-pill.on{background:var(--brand);color:var(--brand-ink)}
+.nle-canvas-area{flex:1;display:grid;place-items:center;position:relative;padding:12px;overflow:hidden}
+.nle-player-box{
+  position:relative;height:100%;max-height:calc(92vh - 380px);aspect-ratio:9/16;
+  border-radius:12px;overflow:hidden;background:#000;box-shadow:0 12px 40px rgba(0,0,0,.8);
+}
+.nle-player-box.sq{aspect-ratio:1/1}
+.nle-player-box.ls{aspect-ratio:16/9}
+.nle-player-box video{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Safe zone overlays */
+.safe-zone-overlay{position:absolute;inset:0;pointer-events:none;z-index:4;display:none}
+.safe-zone-overlay.on{display:block}
+.sz-right{position:absolute;right:10px;bottom:90px;display:flex;flex-direction:column;align-items:center;gap:14px;color:#fff}
+.sz-icon{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.sz-icon svg{width:24px;height:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+.sz-bottom{position:absolute;left:14px;right:75px;bottom:20px;color:#fff;display:flex;flex-direction:column;gap:4px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.sz-bottom b{font-size:13px;font-weight:700}
+.sz-bottom span{font-size:11px;opacity:.9}
+
+/* Caption Live CSS Preview */
+.caption-live-preview{
+  position:absolute;left:5%;right:5%;pointer-events:none;z-index:3;text-align:center;
+  font-family:"Poppins ExtraBold",sans-serif;font-size:22px;color:#fff;line-height:1.2;
+  text-shadow:0 2px 8px rgba(0,0,0,.9);-webkit-text-stroke:2px #000;
+}
+.caption-live-preview .cap-act{color:#00F0FF;display:inline-block;transform:scale(1.15);transition:transform .1s ease}
+
+/* Quick Caption Bar */
+.nle-cap-bar{
+  display:flex;align-items:center;gap:10px;padding:8px 14px;background:#14100E;
+  border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.6);overflow-x:auto;
+}
+
+/* Right Panel */
+.nle-right{border-left:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;min-height:0;background:#16110E;overflow-y:auto;padding:16px;gap:14px}
+.nle-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.nle-box h4{font-size:12px;font-weight:600;color:var(--brand);margin:0;display:flex;align-items:center;gap:6px}
+.nle-variants{display:flex;flex-direction:column;gap:4px}
+.nle-var-chip{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;
+  border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;text-align:left;transition:all .15s ease;
+}
+.nle-var-chip:hover{background:rgba(255,139,51,.2);border-color:var(--brand);color:#FFB27A}
+.nle-score-bar{display:flex;flex-direction:column;gap:3px;font-size:11px;color:rgba(255,255,255,.7)}
+.nle-bar-track{width:100%;height:5px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden}
+.nle-bar-fill{height:100%;background:linear-gradient(90deg,var(--brand),#FF4B2B);border-radius:999px}
+
+/* Bottom Dock */
+.nle-dock{
+  height:240px;border-top:1px solid rgba(255,255,255,.08);background:#16110E;
+  display:flex;flex-direction:column;flex:none;min-height:0;
+}
+.nle-dock-head{
+  display:flex;align-items:center;justify-content:space-between;padding:6px 14px;
+  background:#181310;border-bottom:1px solid rgba(255,255,255,.08);gap:10px;
+}
+.nle-dock-body{flex:1;min-height:0;overflow-y:auto;padding:12px}
+
+/* Interactive Transcript Editor */
+.tr-words-flow{display:flex;flex-wrap:wrap;gap:4px 6px;line-height:1.8;user-select:none}
+.tr-word{
+  padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.04);color:#F4EEEA;
+  font-size:13px;cursor:pointer;transition:all .1s ease;display:inline-flex;align-items:center;
+}
+.tr-word:hover{background:rgba(255,255,255,.12);color:#fff}
+.tr-word.active{background:var(--brand);color:var(--brand-ink);font-weight:700}
+.tr-word.cut{text-decoration:line-through;color:rgba(255,255,255,.25);background:rgba(255,60,60,.1)}
+.tr-word.selected{outline:2px solid var(--brand);background:rgba(255,139,51,.25)}
+.tr-edit-input{font:inherit;font-size:13px;padding:2px 4px;background:#2A1A12;color:#fff;border:1px solid var(--brand);border-radius:4px}
+
+/* Multi-clip Timeline Sequencer Tray */
+.seq-tray{display:flex;gap:10px;overflow-x:auto;padding:4px 0;align-items:center}
+.seq-card{
+  width:140px;flex:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:5px;
+}
+.seq-card.teaser{border-color:#FFD700;background:rgba(255,215,0,.08)}
+.seq-thumb{width:100%;aspect-ratio:16/9;background:#000;object-fit:cover;border-radius:4px}
+.seq-trans{display:grid;place-items:center;color:var(--brand);font-size:11px;font-weight:700}
+
+/* Command Palette */
+dialog#cmdPaletteDlg{
+  width:min(90vw,560px);border-radius:12px;background:#181310;border:1px solid rgba(255,255,255,.12);
+  color:#fff;padding:0;box-shadow:0 24px 80px rgba(0,0,0,.85);
+}
+.cmd-box{display:flex;flex-direction:column}
+.cmd-input{
+  width:100%;padding:14px 16px;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:14px;outline:none;
+}
+.cmd-list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;padding:6px}
+.cmd-item{
+  display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:6px;
+  cursor:pointer;font-size:13px;color:rgba(255,255,255,.8);
+}
+.cmd-item:hover,.cmd-item.on{background:var(--brand);color:var(--brand-ink)}
+.cmd-shortcut{font-size:11px;opacity:.7;font-family:monospace}
+
 </style>
 </head>
 <body>
@@ -890,6 +1048,7 @@ dialog[open]{animation:fadein .16s ease}
   </main>
 </div>
 <dialog id="clipdlg"></dialog>
+<dialog id="cmdPaletteDlg"></dialog>
 <dialog id="formdlg"></dialog>
 <input type="file" id="file" accept="video/*" multiple hidden>
 <div id="toasts" role="status" aria-live="polite"></div>
@@ -2597,128 +2756,1129 @@ function switchStageTab(tab) {
   }
 }
 
+/* ============================================================ NLE Creator Studio State & Engine */
+const nleState = {
+  jid: null,
+  cid: null,
+  activeTab: "clips", // clips | music | overlays
+  dockTab: "transcript", // transcript | sequencer
+  aspect: "9:16", // 9:16 | 1:1 | 16:9
+  safeZone: "off", // off | tiktok | shorts | reels
+  cleanMaster: false,
+  selectedWords: new Set(),
+  edl: { excluded: [], word_corrections: {} },
+  captionStyle: { font: "Poppins ExtraBold", active_color: "#00F0FF", base_color: "#FFFFFF", size: 132, y_pos: 1380 },
+  audio: { music_track: "", music_vol: 0.25, ducking: true, sfx: [], studio_voice: false },
+  overlays: [],
+  history: [],
+  sequence: { items: [], aspect: "9:16", audio: { music_track: "", music_vol: 0.25, ducking: true, studio_voice: false } },
+  musicTracks: [],
+  sfxList: [],
+  activeWordIdx: -1,
+  audioPreviewEl: null
+};
+
+function initNleState(j, c) {
+  nleState.jid = j.id;
+  nleState.cid = c.id;
+  nleState.activeTab = "clips";
+  nleState.dockTab = "transcript";
+  nleState.aspect = c.aspect || "9:16";
+  nleState.cleanMaster = !!c.clean_master;
+  nleState.selectedWords.clear();
+  nleState.edl = c.edl ? JSON.parse(JSON.stringify(c.edl)) : { excluded: [], word_corrections: {} };
+  nleState.captionStyle = c.caption_style ? JSON.parse(JSON.stringify(c.caption_style)) : { font: "Poppins ExtraBold", active_color: "#00F0FF", base_color: "#FFFFFF", size: 132, y_pos: 1380 };
+  nleState.audio = c.audio ? JSON.parse(JSON.stringify(c.audio)) : { music_track: "", music_vol: 0.25, ducking: true, sfx: [], studio_voice: false };
+  nleState.overlays = c.overlays ? JSON.parse(JSON.stringify(c.overlays)) : [];
+  nleState.history = [];
+
+  // Fetch background music and SFX if not loaded yet
+  if (!nleState.musicTracks.length) {
+    api("/api/music").then(tracks => { nleState.musicTracks = tracks || []; if ($("#nleMusicList")) drawNleMusicList(); }).catch(() => {});
+  }
+  if (!nleState.sfxList.length) {
+    api("/api/sfx").then(sfx => { nleState.sfxList = sfx || []; }).catch(() => {});
+  }
+}
+
+function pushNleHistory() {
+  nleState.history.push({
+    edl: JSON.parse(JSON.stringify(nleState.edl)),
+    captionStyle: JSON.parse(JSON.stringify(nleState.captionStyle)),
+    audio: JSON.parse(JSON.stringify(nleState.audio)),
+    aspect: nleState.aspect,
+    cleanMaster: nleState.cleanMaster
+  });
+  if (nleState.history.length > 25) nleState.history.shift();
+}
+
+function undoNleState() {
+  if (!nleState.history.length) { toast("Nothing to undo"); return; }
+  const prev = nleState.history.pop();
+  nleState.edl = prev.edl;
+  nleState.captionStyle = prev.captionStyle;
+  nleState.audio = prev.audio;
+  nleState.aspect = prev.aspect;
+  nleState.cleanMaster = prev.cleanMaster;
+  drawNleStudio(false);
+  renderNleTranscript();
+  toast("↩ Undid last action");
+}
+
 function openClip(jid, cid) {
   D.jid = jid; D.cid = cid; D.sig = "";
   const j = jobOf(jid), c = j?.clips.find(x => x.id === cid);
-  if (j && c) initSplitState(j, c);
-  drawClipDlg(true);
+  if (!j || !c) return;
+  initSplitState(j, c);
+  initNleState(j, c);
+  drawNleStudio(true);
   $("#clipdlg").showModal();
   bindCropFrameEvents();
   updateCropBoxUI();
-  if (c && (isSplitLayout(c.layout) || !c.layout || c.layout === "blur")) {
+  bindNleEvents();
+  if (isSplitLayout(c.layout) || !c.layout || c.layout === "blur") {
     setTimeout(() => { renderSplitPreview(); }, 60);
   }
 }
-function drawClipDlg(full) {
+
+function drawNleStudio(full) {
   const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid), dlg = $("#clipdlg");
   if (!c) { if (dlg.open) dlg.close(); return; }
   const m = `/media/${j.id}/`, sig = c.status + c.version;
-  const stage = c.status === "done" ? `<video src="${m}${esc(c.file)}?v=${c.version}" poster="${m}${esc(c.cover)}?v=${c.version}" controls autoplay playsinline></video>`
-    : c.status === "error" ? `<div class="err" style="padding:20px;text-align:center">${esc(c.error || "Could not make this clip.")}</div>`
-    : `<span class="making">${c.status === "rendering" ? "Making this clip…" : "Waiting its turn…"}</span>`;
+
+  const scoreNum = c.viral_score || c.score || 70;
+  const breakdown = c.viral_breakdown || {
+    hook_strength: Math.min(25, Math.floor(scoreNum / 4) + 1),
+    energy_arc: Math.min(25, Math.floor(scoreNum / 4) + 1),
+    context_clarity: Math.min(25, Math.floor(scoreNum / 4)),
+    payoff_retention: Math.min(25, Math.floor(scoreNum / 4))
+  };
+
+  const hookVariants = (c.hook_variants && c.hook_variants.length) ? c.hook_variants : ["WAIT FOR THE END", "YOU WON'T BELIEVE THIS", "BEST REACTION"];
+  const titleVariants = (c.title_variants && c.title_variants.length) ? c.title_variants : [
+    `${c.title || "Crazy moment"} - Insane Clip`,
+    `When this happened... (${c.title || "Stream"})`,
+    `Best moment: ${c.title || "Gameplay"}`
+  ];
+
+  // All clips sorted by Viral Score for the Left Panel
+  const allClips = [...(j.clips || [])].sort((a, b) => (b.viral_score || b.score || 0) - (a.viral_score || a.score || 0));
+
   if (full) {
-    dlg.innerHTML = `<div class="editor"><div class="stage" id="stage">
-        <div class="stage-nav">
-          <button type="button" class="stage-tab on" id="tabStageVideo" data-act="stagetab" data-tab="video">🎬 Rendered Clip</button>
-          <button type="button" class="stage-tab" id="tabStageSplit" data-act="stagetab" data-tab="split">📐 Split Preview</button>
+    dlg.innerHTML = `
+    <div class="nle-studio">
+      <!-- 1. Top Header Bar -->
+      <div class="nle-topbar">
+        <div class="title-group">
+          <span class="nle-badge fire">🔥 Viral Score: ${scoreNum}/100</span>
+          <h2>${esc(c.title || "Untitled Clip")}</h2>
+          <span class="sub" style="font-size:12px;opacity:.7">(${c.start.toFixed(1)}s - ${c.end.toFixed(1)}s · ${(c.end - c.start).toFixed(1)}s)</span>
         </div>
-        <div id="stageVideo" style="width:100%;height:100%;display:grid;place-items:center">${stage}</div>
-        <div id="stageSplit" style="display:none">
-          <canvas id="splitPreviewCanvas" width="1080" height="1920"></canvas>
+        <div class="actions">
+          <button type="button" class="btn sm" id="btnCmdPal" title="Command Palette (Cmd/Ctrl+K)">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:4px"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            Cmd+K
+          </button>
+          <button type="button" class="btn sm primary" data-act="remake">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:4px"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+            Save & Re-make
+          </button>
+          <button type="button" class="btn icon ghost" data-act="closedlg" aria-label="Close" title="Close (Esc)">${ic("x")}</button>
         </div>
       </div>
-      <div class="panel">
-        <div class="job-head" style="margin:0"><div><span class="badge ${scoreCls(c.score)}" style="position:static">${c.judges ? "Words " + c.judges.words + (c.judges.reaction ? " · Reaction " + c.judges.reaction : "") : c.score ? "Score " + c.score : "Clipped by hand"}</span>
-          <p class="sub" style="margin-top:8px">${esc(c.reason || "")}</p></div><button class="btn icon ghost" data-act="closedlg" aria-label="Close">${ic("x")}</button></div>
-        <h3>On the video</h3>
-        <label class="f">Big text<input data-f="hook" value="${esc(c.hook)}"></label>
-        <label class="sw"><input type="checkbox" data-f="captions" data-caption-toggle ${c.captions === false ? "" : "checked"}>Generate captions</label>
-        <div class="two"><label class="f">Caption style<select data-f="style" data-caption-style ${c.captions === false ? "disabled" : ""}>${opts(S.status.styles, c.style)}</select></label>
-          <label class="f">Layout<select data-f="layout" id="clipLayoutSelect">${opts(S.status.layouts, c.layout)}</select></label></div>
-        <div id="splitStudioBox" class="split-studio" style="${isSplitLayout(c.layout) ? '' : 'display:none'}">
-          <h4>${ic("sliders")} Auto Facecam Split Studio</h4>
-          <div class="split-presets" id="splitPresetGroup">
-            <button type="button" class="sp-btn top ${splitState.preset==='top'?'on':''}" data-sp-preset="top">
-              <i></i><span>Creator Top + Game</span>
-            </button>
-            <button type="button" class="sp-btn bottom ${splitState.preset==='bottom'?'on':''}" data-sp-preset="bottom">
-              <i></i><span>Game Top + Creator</span>
-            </button>
-            <button type="button" class="sp-btn pip ${splitState.preset==='pip'?'on':''}" data-sp-preset="pip">
-              <i></i><span>Facecam PIP</span>
-            </button>
-            <button type="button" class="sp-btn custom ${splitState.preset==='custom'?'on':''}" data-sp-preset="custom">
-              <i></i><span>Custom Split</span>
-            </button>
+
+      <!-- 2. Main 3-Pane Body -->
+      <div class="nle-body">
+        <!-- LEFT PANEL: Media & Clips Bin -->
+        <div class="nle-left">
+          <div class="nle-tabs">
+            <button type="button" class="nle-tab ${nleState.activeTab==='clips'?'on':''}" data-nle-tab="clips">AI Clips (${allClips.length})</button>
+            <button type="button" class="nle-tab ${nleState.activeTab==='music'?'on':''}" data-nle-tab="music">Music</button>
+            <button type="button" class="nle-tab ${nleState.activeTab==='overlays'?'on':''}" data-nle-tab="overlays">B-Roll</button>
           </div>
-          <div class="row" style="justify-content:space-between;align-items:center;margin-top:2px">
-            <button type="button" class="btn sm primary" id="btnAutoDetect" data-act="autodetect">
-              <svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:2px"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29c-.39-.39-1.02-.39-1.41 0L1.29 18.96c-.39.39-.39 1.02 0 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05c.39-.39.39-1.02 0-1.41l-2.33-2.35zm-1.06 3.12l-1.41-1.41 1.41-1.41 1.41 1.41-1.41 1.41z"/></svg>
-              Auto Detect Facecam
-            </button>
-            <button type="button" class="btn sm ghost" data-act="resetsplit">Reset Layout</button>
-          </div>
-          <div id="splitDetectStatus" class="split-stat"></div>
-          <div style="font-size:11px;font-weight:600;color:var(--frame-dim);margin-top:2px">Facecam Region (Drag box to position / resize)</div>
-          <div class="split-crop-frame" id="cropFrameContainer">
-            <img id="cropSourceImg" src="/api/jobs/${j.id}/clips/${c.id}/source-frame?t=${(c.start + (c.end - c.start) / 2).toFixed(2)}" alt="Source" crossorigin="anonymous">
-            <div id="cropRect" class="crop-rect" style="left:3%;top:5%;width:28%;height:35%">
-              <span class="cr-tag">Creator</span>
-              <div class="cr-handle nw" data-dir="nw"></div>
-              <div class="cr-handle ne" data-dir="ne"></div>
-              <div class="cr-handle sw" data-dir="sw"></div>
-              <div class="cr-handle se" data-dir="se"></div>
-            </div>
-          </div>
-          <div class="split-cbar">
-            <span style="font-size:11px;color:var(--frame-dim)">Corners:</span>
-            <button type="button" class="btn sm" data-corner="tl">Top-Left</button>
-            <button type="button" class="btn sm" data-corner="tr">Top-Right</button>
-            <button type="button" class="btn sm" data-corner="bl">Bottom-Left</button>
-            <button type="button" class="btn sm" data-corner="br">Bottom-Right</button>
-          </div>
-          <div class="split-slider">
-            <div class="row-lbl"><span>Split Ratio</span><b id="lblSplitRatio">${Math.round(splitState.ratio * 100)}% Creator / ${100 - Math.round(splitState.ratio * 100)}% Game</b></div>
-            <input type="range" id="slSplitRatio" min="25" max="75" value="${Math.round(splitState.ratio * 100)}" step="1">
-          </div>
-          <div class="split-slider">
-            <div class="row-lbl"><span>Creator Facecam Zoom</span><b id="lblCamZoom">${splitState.camZoom.toFixed(1)}x</b></div>
-            <input type="range" id="slCamZoom" min="100" max="250" value="${Math.round(splitState.camZoom * 100)}" step="5">
-          </div>
-          <div class="split-slider">
-            <div class="row-lbl"><span>Gameplay Position (Pan)</span><b id="lblGameX">${splitState.gameX === 0.5 ? 'Center' : Math.round(splitState.gameX * 100) + '%'}</b></div>
-            <input type="range" id="slGameX" min="0" max="100" value="${Math.round(splitState.gameX * 100)}" step="1">
-          </div>
-          <div class="split-slider">
-            <div class="row-lbl"><span>Gameplay Zoom</span><b id="lblGameZoom">${splitState.gameZoom.toFixed(1)}x</b></div>
-            <input type="range" id="slGameZoom" min="100" max="250" value="${Math.round(splitState.gameZoom * 100)}" step="5">
+          <div class="nle-panel-scroll" id="nleLeftPane">
+            <!-- Populated dynamically by drawNleLeftTab() -->
           </div>
         </div>
-        <div class="two"><label class="f">Start (seconds)<input data-f="start" type="number" step="0.5" value="${c.start}"></label>
-          <label class="f">End (seconds)<input data-f="end" type="number" step="0.5" value="${c.end}"></label></div>
-        <div class="row" style="justify-content:space-between;align-items:center"><h3>Post text</h3>
-          <button class="btn sm" data-act="writetext">Write again with AI</button></div>
-        <label class="f">Title<input data-f="title" value="${esc(c.title)}"></label>
-        <label class="f">Description<textarea data-f="description" rows="2">${esc(c.description)}</textarea></label>
-        <label class="f">Hashtags<input data-f="hashtags" value="${esc((c.hashtags || []).join(" "))}" placeholder="funny gaming clutch"></label>
-        <button class="btn" data-act="remake">${ic("scissors")}Save and re-make clip</button>
-        <h3>Post it</h3>
-        <div id="dposts" class="row" style="gap:4px"></div>
-        ${S.accounts.length ? `<div class="row">${S.accounts.map(a => `<label class="ck"><input type="checkbox" data-pacc value="${esc(a.id)}">${esc(a.label)} · ${esc(a.name)}</label>`).join("")}</div>
-          <div class="row"><button class="btn primary" data-act="postnow">${ic("send")}Post now</button><button class="btn" data-act="postqueue">Add to queue</button></div>`
-          : `<p class="help">No accounts connected yet. Connect one in Settings.</p>`}
-        <div class="row" style="margin-top:auto;padding-top:8px;border-top:1px solid var(--line)">
-          ${c.status === "done" ? `<a class="btn" href="${m}${esc(c.file)}?download=1">${ic("down")}Download</a>` : ""}
-          <button class="btn" data-act="copy" data-j="${j.id}" data-c="${esc(c.id)}">${ic("copy")}Copy post text</button></div>
-      </div></div>`;
-  } else if (D.sig !== sig) $("#stage").innerHTML = stage;
+
+        <!-- CENTER CANVAS: Live Preview Player & Safe Zones -->
+        <div class="nle-center">
+          <div class="nle-center-top">
+            <div class="nle-pill-group" title="Aspect Ratio">
+              <button type="button" class="nle-pill ${nleState.aspect==='9:16'?'on':''}" data-aspect="9:16">9:16</button>
+              <button type="button" class="nle-pill ${nleState.aspect==='1:1'?'on':''}" data-aspect="1:1">1:1</button>
+              <button type="button" class="nle-pill ${nleState.aspect==='16:9'?'on':''}" data-aspect="16:9">16:9</button>
+            </div>
+
+            <div class="nle-pill-group" title="Platform Safe Zone Guide">
+              <span style="font-size:10px;font-weight:700;color:var(--frame-dim);padding:3px 4px">Safe Zone:</span>
+              <button type="button" class="nle-pill ${nleState.safeZone==='off'?'on':''}" data-sz="off">Off</button>
+              <button type="button" class="nle-pill ${nleState.safeZone==='tiktok'?'on':''}" data-sz="tiktok">TikTok</button>
+              <button type="button" class="nle-pill ${nleState.safeZone==='shorts'?'on':''}" data-sz="shorts">Shorts</button>
+              <button type="button" class="nle-pill ${nleState.safeZone==='reels'?'on':''}" data-sz="reels">Reels</button>
+            </div>
+
+            <div class="nle-pill-group">
+              <select id="nleLayoutSelect" style="background:transparent;border:0;color:#fff;font-size:11px;font-weight:600;padding:2px 4px;outline:none">
+                <option value="blur" ${c.layout==='blur'?'selected':''}>Blur Fill</option>
+                <option value="crop" ${c.layout==='crop'?'selected':''}>Crop Fill</option>
+                <option value="facecam_split" ${isSplitLayout(c.layout)?'selected':''}>Auto Facecam Split</option>
+                <option value="speaker_track" ${c.layout==='speaker_track'?'selected':''}>Auto-Reframe (Speaker Track)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="nle-canvas-area" id="nleCanvasArea">
+            <div class="nle-player-box ${nleState.aspect==='1:1'?'sq':nleState.aspect==='16:9'?'ls':''}" id="nlePlayerBox">
+              <!-- Rendered Video Player -->
+              <video id="nleVideoPlayer" src="${m}${esc(c.file)}?v=${c.version}" poster="${m}${esc(c.cover)}?v=${c.version}" controls playsinline></video>
+
+              <!-- Safe Zone Overlay Guides -->
+              <div class="safe-zone-overlay ${nleState.safeZone!=='off'?'on':''}" id="nleSafeZoneOverlay">
+                <!-- Injected by renderNleSafeZone() -->
+              </div>
+
+              <!-- Live CSS Caption Bouncing Preview -->
+              <div class="caption-live-preview" id="nleCaptionPreview" style="bottom:${Math.round((2000 - (nleState.captionStyle.y_pos||1380)) / 1920 * 100)}%">
+                <span class="cap-pre">${esc(c.hook || "HOOK TEXT")}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Caption Styling Bar -->
+          <div class="nle-cap-bar">
+            <span>Font:</span>
+            <select id="nleFontSelect" style="background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:4px;padding:2px 6px">
+              <option value="Poppins ExtraBold" ${nleState.captionStyle.font==='Poppins ExtraBold'?'selected':''}>Poppins</option>
+              <option value="Anton" ${nleState.captionStyle.font==='Anton'?'selected':''}>Anton</option>
+              <option value="Archivo Black" ${nleState.captionStyle.font==='Archivo Black'?'selected':''}>Archivo Black</option>
+            </select>
+            <span>Highlight:</span>
+            <input type="color" id="nleColorPicker" value="${nleState.captionStyle.active_color || '#00F0FF'}" style="width:24px;height:22px;border:0;background:transparent;cursor:pointer">
+            <span>Position Y:</span>
+            <input type="range" id="nleCapYSlider" min="600" max="1750" value="${nleState.captionStyle.y_pos || 1380}" style="width:90px">
+            <label style="display:flex;align-items:center;gap:4px;margin-left:auto;font-size:11px;color:#FFB27A;cursor:pointer">
+              <input type="checkbox" id="chkCleanMaster" ${nleState.cleanMaster?'checked':''}>
+              Clean Master (No captions)
+            </label>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: Inspector & Settings -->
+        <div class="nle-right">
+          <!-- Viral Breakdown Box -->
+          <div class="nle-box">
+            <h4>⚡ Viral Intelligence Breakdown</h4>
+            <div class="nle-score-bar">
+              <div class="row-lbl"><span>🪝 Hook Strength</span><b>${breakdown.hook_strength}/25</b></div>
+              <div class="nle-bar-track"><div class="nle-bar-fill" style="width:${breakdown.hook_strength*4}%"></div></div>
+            </div>
+            <div class="nle-score-bar">
+              <div class="row-lbl"><span>🔥 Emotional Arc</span><b>${breakdown.energy_arc}/25</b></div>
+              <div class="nle-bar-track"><div class="nle-bar-fill" style="width:${breakdown.energy_arc*4}%"></div></div>
+            </div>
+            <div class="nle-score-bar">
+              <div class="row-lbl"><span>🎯 Context Clarity</span><b>${breakdown.context_clarity}/25</b></div>
+              <div class="nle-bar-track"><div class="nle-bar-fill" style="width:${breakdown.context_clarity*4}%"></div></div>
+            </div>
+            <div class="nle-score-bar">
+              <div class="row-lbl"><span>💎 Climax Payoff</span><b>${breakdown.payoff_retention}/25</b></div>
+              <div class="nle-bar-track"><div class="nle-bar-fill" style="width:${breakdown.payoff_retention*4}%"></div></div>
+            </div>
+            <p class="sub" style="font-size:11px;margin-top:4px;color:#A99A91">💡 ${esc(c.reason || "Strong curiosity hook + engaging reaction")}</p>
+          </div>
+
+          <!-- 1-Click Alternative AI Hooks -->
+          <div class="nle-box">
+            <h4>🪝 Video Hook (Big Text)</h4>
+            <input data-f="hook" id="nleHookInput" value="${esc(c.hook)}" style="width:100%;padding:6px 8px;background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:6px;font-weight:700">
+            <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">1-Click Swap AI Variations:</div>
+            <div class="nle-variants" id="nleHookVariants">
+              ${hookVariants.map(v => `<button type="button" class="nle-var-chip" data-set-hook="${esc(v)}">⚡ ${esc(v)}</button>`).join("")}
+            </div>
+          </div>
+
+          <!-- 1-Click Alternative Titles -->
+          <div class="nle-box">
+            <div class="row" style="justify-content:space-between;align-items:center">
+              <h4>📝 Post Title</h4>
+              <button type="button" class="btn sm" data-act="writetext">AI Rewrite</button>
+            </div>
+            <input data-f="title" id="nleTitleInput" value="${esc(c.title)}" style="width:100%;padding:6px 8px;background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:6px">
+            <div class="nle-variants">
+              ${titleVariants.map(v => `<button type="button" class="nle-var-chip" data-set-title="${esc(v)}">${esc(v)}</button>`).join("")}
+            </div>
+            <label class="f" style="margin-top:4px">Description<textarea data-f="description" rows="2" style="background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff">${esc(c.description)}</textarea></label>
+            <label class="f">Hashtags<input data-f="hashtags" value="${esc((c.hashtags||[]).join(" "))}" style="background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff"></label>
+          </div>
+
+          <!-- Audio Engine & Voice Controls -->
+          <div class="nle-box">
+            <h4>🔊 Audio Engine & Background Music</h4>
+            <label class="f">Music Track
+              <select id="nleMusicSelect" style="background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff">
+                <option value="">(None - Original Audio Only)</option>
+                ${(nleState.musicTracks || []).map(t => `<option value="${esc(t.filename)}" ${nleState.audio.music_track===t.filename?'selected':''}>${esc(t.name)}</option>`).join("")}
+              </select>
+            </label>
+            <div class="row-lbl" style="font-size:11px;color:rgba(255,255,255,.6)">
+              <span>Music Volume</span><b id="lblMusicVol">${Math.round(nleState.audio.music_vol*100)}%</b>
+            </div>
+            <input type="range" id="nleMusicVol" min="5" max="100" value="${Math.round(nleState.audio.music_vol*100)}">
+            <label class="sw" style="font-size:12px;color:#fff">
+              <input type="checkbox" id="chkAutoDuck" ${nleState.audio.ducking?'checked':''}>
+              Auto-Ducking (Compress music on speech)
+            </label>
+            <label class="sw" style="font-size:12px;color:#fff">
+              <input type="checkbox" id="chkStudioVoice" ${nleState.audio.studio_voice?'checked':''}>
+              🎙️ Studio Voice (High-pass + Compression + Loudnorm)
+            </label>
+            <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px">Sound Effects (SFX):</div>
+            <div class="row" style="gap:4px">
+              <button type="button" class="btn sm" data-add-sfx="whoosh">💨 Whoosh</button>
+              <button type="button" class="btn sm" data-add-sfx="pop">🫧 Pop</button>
+              <button type="button" class="btn sm" data-add-sfx="boom">💥 Boom</button>
+              <button type="button" class="btn sm" data-add-sfx="censor">🔇 Censor</button>
+            </div>
+          </div>
+
+          <!-- Subtitle Exports -->
+          <div class="nle-box">
+            <h4>📥 Subtitles & Transcripts</h4>
+            <div class="row" style="gap:6px">
+              <a class="btn sm" href="/api/jobs/${j.id}/clips/${c.id}/export/srt" download="${c.id}.srt">Export .SRT</a>
+              <a class="btn sm" href="/api/jobs/${j.id}/clips/${c.id}/export/vtt" download="${c.id}.vtt">Export .VTT</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Bottom Dock: Dual-Mode Editor (Transcript vs Timeline Sequencer) -->
+      <div class="nle-dock">
+        <div class="nle-dock-head">
+          <div class="nle-tabs" style="border:0;background:transparent;padding:0">
+            <button type="button" class="nle-tab ${nleState.dockTab==='transcript'?'on':''}" data-dock-tab="transcript">
+              📝 Interactive Transcript (Descript-Style)
+            </button>
+            <button type="button" class="nle-tab ${nleState.dockTab==='sequencer'?'on':''}" data-dock-tab="sequencer">
+              🎞️ Multi-Clip Timeline Sequencer
+            </button>
+          </div>
+
+          <!-- Dock toolbar -->
+          <div class="row" id="nleDockToolbar" style="gap:6px;align-items:center">
+            <!-- Dynamically populated based on dock tab -->
+          </div>
+        </div>
+
+        <div class="nle-dock-body" id="nleDockBody">
+          <!-- Populated by renderNleTranscript() or renderNleSequencer() -->
+        </div>
+      </div>
+    </div>`;
+
+    drawNleLeftTab();
+    renderNleSafeZone();
+    renderNleTranscript();
+    renderNleSequencer();
+  }
+
   D.sig = sig;
-  put($("#dposts"), postPills(c));
 }
-function postText() {   // the post text as it is in the clip editor right now
-  const v = k => $(`#clipdlg [data-f="${k}"]`).value;
-  return {title: v("title"), description: v("description"), hashtags: v("hashtags").split(/\s+/).map(h => h.replace(/^#+/, "")).filter(Boolean)};
+
+function drawNleLeftTab() {
+  const container = $("#nleLeftPane");
+  if (!container) return;
+  const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+  if (!j || !c) return;
+
+  if (nleState.activeTab === "clips") {
+    const allClips = [...(j.clips || [])].sort((a, b) => (b.viral_score || b.score || 0) - (a.viral_score || a.score || 0));
+    container.innerHTML = allClips.map(clip => `
+      <div class="nle-clip-card ${clip.id===c.id?'on':''}" data-open-cid="${clip.id}">
+        <img class="nle-clip-thumb" src="/media/${j.id}/${esc(clip.cover)}?v=${clip.version}" alt="Cover">
+        <div class="nle-clip-info">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <span class="nle-badge ${(clip.viral_score||clip.score||0)>80?'fire':''}">Score: ${clip.viral_score || clip.score || 70}</span>
+            <span style="font-size:11px;opacity:.6">${(clip.end - clip.start).toFixed(0)}s</span>
+          </div>
+          <b class="nle-clip-title">${esc(clip.title || "Clip")}</b>
+          <p class="nle-clip-reason">${esc(clip.reason || "")}</p>
+        </div>
+      </div>
+    `).join("");
+  } else if (nleState.activeTab === "music") {
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label class="btn sm primary" style="cursor:pointer;text-align:center;justify-content:center">
+          + Upload Custom Audio
+          <input type="file" id="nleMusicUploadInput" accept="audio/*" hidden>
+        </label>
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">Bundled Music Loops:</div>
+        <div id="nleMusicList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    `;
+    drawNleMusicList();
+  } else if (nleState.activeTab === "overlays") {
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:12px;color:rgba(255,255,255,.7)">Overlay stickers, reaction GIFs, or B-roll:</div>
+        <button type="button" class="btn sm" id="btnAddOverlayReaction">+ Add Reaction Overlay</button>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.4">
+          Overlays render on top of the video between specific timestamps with custom scale and positioning.
+        </div>
+      </div>
+    `;
+  }
 }
+
+function drawNleMusicList() {
+  const list = $("#nleMusicList");
+  if (!list) return;
+  list.innerHTML = (nleState.musicTracks || []).map(t => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:rgba(255,255,255,.04);border-radius:6px">
+      <div>
+        <b style="font-size:12px;display:block">${esc(t.name)}</b>
+        <span style="font-size:10px;opacity:.6">${esc(t.filename)}</span>
+      </div>
+      <div class="row" style="gap:4px">
+        <button type="button" class="btn sm ghost" data-play-preview="${esc(t.url)}" title="Preview">▶</button>
+        <button type="button" class="btn sm ${nleState.audio.music_track===t.filename?'primary':''}" data-select-track="${esc(t.filename)}">
+          ${nleState.audio.music_track===t.filename?'Attached':'Attach'}
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderNleSafeZone() {
+  const sz = $("#nleSafeZoneOverlay");
+  if (!sz) return;
+  const z = nleState.safeZone;
+  if (z === "off") { sz.className = "safe-zone-overlay"; sz.innerHTML = ""; return; }
+  sz.className = "safe-zone-overlay on";
+
+  if (z === "tiktok") {
+    sz.innerHTML = `
+      <div class="sz-right">
+        <div class="sz-icon" style="width:36px;height:36px;border-radius:50%;background:#FF4B2B;display:grid;place-items:center"><span>+</span></div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="red" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>284K</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>1.4K</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="#FFD700" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>29K</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>12K</div>
+      </div>
+      <div class="sz-bottom">
+        <b>@creator · TikTok Safe Zone</b>
+        <span>Watch until the end! #gaming #viral #shorts</span>
+        <span style="font-size:10px;opacity:.7">♫ Original Sound - Trending Audio</span>
+      </div>
+    `;
+  } else if (z === "shorts") {
+    sz.innerHTML = `
+      <div class="sz-right">
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>94K</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>Dislike</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>820</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>Share</div>
+      </div>
+      <div class="sz-bottom">
+        <div style="display:flex;align-items:center;gap:6px">
+          <b>Creator Name</b>
+          <span style="background:red;color:#fff;font-size:10px;padding:1px 6px;border-radius:4px">Subscribe</span>
+        </div>
+        <span>YouTube Shorts Safe Zone Guide</span>
+      </div>
+    `;
+  } else if (z === "reels") {
+    sz.innerHTML = `
+      <div class="sz-right">
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>42K</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>310</div>
+        <div class="sz-icon"><svg viewBox="0 0 24 24"><path fill="white" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>Send</div>
+      </div>
+      <div class="sz-bottom">
+        <b>@creator · Follow</b>
+        <span>Instagram Reels Safe Zone Guide</span>
+        <span style="font-size:10px;opacity:.7">🎵 Audio track · Original Audio</span>
+      </div>
+    `;
+  }
+}
+
+function renderNleTranscript() {
+  const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+  const body = $("#nleDockBody");
+  const tb = $("#nleDockToolbar");
+  if (!body || !tb || !c) return;
+
+  if (nleState.dockTab !== "transcript") return;
+
+  tb.innerHTML = `
+    <button type="button" class="btn sm" id="btnCutWords" title="Delete selected words (Backspace/Delete)">✂️ Cut Selected</button>
+    <button type="button" class="btn sm" id="btnRemovePauses" title="Remove silent pauses > 0.5s">⚡ Remove Pauses (>0.5s)</button>
+    <button type="button" class="btn sm" id="btnRemoveFillers" title="Remove um, uh, like">🧹 Remove Fillers</button>
+    <button type="button" class="btn sm ghost" id="btnResetCuts" title="Restore all cuts">↺ Reset Cuts</button>
+    <span style="font-size:11px;color:rgba(255,255,255,.5);margin-left:auto">Click word to seek · Double-click to edit text</span>
+  `;
+
+  const words = c.words || [];
+  if (!words.length) {
+    body.innerHTML = `<div style="padding:20px;text-align:center;color:rgba(255,255,255,.5)">No timestamped words found for this clip range.</div>`;
+    return;
+  }
+
+  const excluded = nleState.edl.excluded || [];
+  const corrections = nleState.edl.word_corrections || {};
+
+  function isWordCut(s, e) {
+    const mid = (s + e) / 2;
+    return excluded.some(([xs, xe]) => xs <= mid && mid <= xe);
+  }
+
+  body.innerHTML = `
+    <div class="tr-words-flow" id="trWordsFlow">
+      ${words.map((w, idx) => {
+        const cut = isWordCut(w.s, w.e);
+        const sel = nleState.selectedWords.has(idx);
+        const text = corrections[idx] || w.w;
+        return `<span class="tr-word ${cut?'cut':''} ${sel?'selected':''}" data-widx="${idx}" data-s="${w.s}" data-e="${w.e}" title="${w.s.toFixed(2)}s - ${w.e.toFixed(2)}s">${esc(text)}</span>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderNleSequencer() {
+  const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+  const body = $("#nleDockBody");
+  const tb = $("#nleDockToolbar");
+  if (!body || !tb || !c) return;
+
+  if (nleState.dockTab !== "sequencer") return;
+
+  tb.innerHTML = `
+    <button type="button" class="btn sm primary" id="btnAddCurrentClipToSeq">+ Add Clip to Sequence</button>
+    <button type="button" class="btn sm" id="btnAddTeaserIntro" title="Insert 2.5s climax teaser at 00:00">⚡ Add Climax Teaser</button>
+    <button type="button" class="btn sm" id="btnRenderSeq" title="Render stitched sequence">🎬 Render Sequence</button>
+    <span style="font-size:11px;color:rgba(255,255,255,.5);margin-left:auto">Sequence: ${nleState.sequence.items.length} clips</span>
+  `;
+
+  if (!nleState.sequence.items.length) {
+    body.innerHTML = `
+      <div style="padding:26px;text-align:center;color:rgba(255,255,255,.5)">
+        <p style="font-size:13px;color:#fff;margin-bottom:6px">Timeline Sequencer is empty.</p>
+        <span>Click <b>+ Add Clip to Sequence</b> or <b>Add Climax Teaser</b> to stitch multiple viral moments into one video.</span>
+      </div>
+    `;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="seq-tray">
+      ${nleState.sequence.items.map((it, idx) => `
+        <div class="seq-card ${it.is_teaser?'teaser':''}">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <span style="font-size:10px;font-weight:700;color:var(--brand)">#${idx+1} ${it.is_teaser?'⚡ TEASER':''}</span>
+            <button type="button" class="btn icon ghost sm" data-seq-del="${idx}" style="width:20px;height:20px">✕</button>
+          </div>
+          <b style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.title || "Clip")}</b>
+          <span style="font-size:10px;opacity:.6">${(it.end - it.start).toFixed(1)}s (${it.start.toFixed(1)}s - ${it.end.toFixed(1)}s)</span>
+          <div class="row" style="gap:2px;margin-top:auto">
+            <button type="button" class="btn sm" data-seq-left="${idx}" ${idx===0?'disabled':''}>◀</button>
+            <button type="button" class="btn sm" data-seq-right="${idx}" ${idx===nleState.sequence.items.length-1?'disabled':''}>▶</button>
+            <select data-seq-trans="${idx}" style="font-size:10px;background:#201814;border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:4px">
+              <option value="fade" ${it.transition==='fade'?'selected':''}>Cross Dissolve</option>
+              <option value="cut" ${it.transition==='cut'?'selected':''}>Hard Cut</option>
+              <option value="slideleft" ${it.transition==='slideleft'?'selected':''}>Slide Left</option>
+              <option value="slideright" ${it.transition==='slideright'?'selected':''}>Slide Right</option>
+              <option value="zoomin" ${it.transition==='zoomin'?'selected':''}>Zoom In</option>
+            </select>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function bindNleEvents() {
+  const dlg = $("#clipdlg");
+  if (!dlg) return;
+
+  // Aspect selector
+  $$("[data-aspect]", dlg).forEach(b => {
+    b.onclick = () => {
+      pushNleHistory();
+      nleState.aspect = b.dataset.aspect;
+      $$("[data-aspect]", dlg).forEach(x => x.classList.toggle("on", x === b));
+      const box = $("#nlePlayerBox");
+      if (box) {
+        box.classList.remove("sq", "ls");
+        if (nleState.aspect === "1:1") box.classList.add("sq");
+        if (nleState.aspect === "16:9") box.classList.add("ls");
+      }
+    };
+  });
+
+  // Safe Zone selector
+  $$("[data-sz]", dlg).forEach(b => {
+    b.onclick = () => {
+      nleState.safeZone = b.dataset.sz;
+      $$("[data-sz]", dlg).forEach(x => x.classList.toggle("on", x === b));
+      renderNleSafeZone();
+    };
+  });
+
+  // Left Panel tabs
+  $$("[data-nle-tab]", dlg).forEach(b => {
+    b.onclick = () => {
+      nleState.activeTab = b.dataset.nleTab;
+      $$("[data-nle-tab]", dlg).forEach(x => x.classList.toggle("on", x === b));
+      drawNleLeftTab();
+    };
+  });
+
+  // Bottom Dock tabs
+  $$("[data-dock-tab]", dlg).forEach(b => {
+    b.onclick = () => {
+      nleState.dockTab = b.dataset.dockTab;
+      $$("[data-dock-tab]", dlg).forEach(x => x.classList.toggle("on", x === b));
+      if (nleState.dockTab === "transcript") renderNleTranscript();
+      else renderNleSequencer();
+    };
+  });
+
+  // Video timeupdate for active word highlighting & live bouncing caption preview
+  const video = $("#nleVideoPlayer");
+  if (video) {
+    video.ontimeupdate = () => {
+      const curT = video.currentTime;
+      const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+      if (!c) return;
+      // Word timing in transcript
+      const words = c.words || [];
+      const absT = c.start + curT;
+      const activeIdx = words.findIndex(w => w.s <= absT && absT <= w.e);
+      if (activeIdx !== nleState.activeWordIdx) {
+        nleState.activeWordIdx = activeIdx;
+        $$(".tr-word.active", dlg).forEach(el => el.classList.remove("active"));
+        if (activeIdx >= 0) {
+          const wEl = $(`[data-widx="${activeIdx}"]`, dlg);
+          if (wEl) {
+            wEl.classList.add("active");
+            wEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+          // Update live preview
+          const capPrev = $("#nleCaptionPreview");
+          if (capPrev) {
+            const corr = nleState.edl.word_corrections || {};
+            const actWord = corr[activeIdx] || words[activeIdx].w;
+            capPrev.innerHTML = `<span class="cap-pre">${esc(c.hook||"")}</span><br><span class="cap-act">${esc(actWord)}</span>`;
+          }
+        }
+      }
+    };
+  }
+
+  // Interactive Transcript word clicks and edits
+  dlg.onclick = async (e) => {
+    const t = e.target;
+    // Word click to seek
+    if (t.classList.contains("tr-word")) {
+      const s = parseFloat(t.dataset.s);
+      const widx = parseInt(t.dataset.widx);
+      const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+      if (video && c) {
+        video.currentTime = Math.max(0, s - c.start);
+      }
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        if (nleState.selectedWords.has(widx)) nleState.selectedWords.delete(widx);
+        else nleState.selectedWords.add(widx);
+        t.classList.toggle("selected", nleState.selectedWords.has(widx));
+      } else {
+        nleState.selectedWords.clear();
+        nleState.selectedWords.add(widx);
+        $$(".tr-word.selected", dlg).forEach(el => el.classList.remove("selected"));
+        t.classList.add("selected");
+      }
+    }
+
+    // Switch clip from bin
+    const clipCard = t.closest("[data-open-cid]");
+    if (clipCard) {
+      openClip(D.jid, clipCard.dataset.openCid);
+    }
+
+    // Set hook variant
+    if (t.dataset.setHook) {
+      pushNleHistory();
+      const inp = $("#nleHookInput");
+      if (inp) inp.value = t.dataset.setHook;
+      toast(`🪝 Hook updated to: "${t.dataset.setHook}"`);
+    }
+
+    // Set title variant
+    if (t.dataset.setTitle) {
+      pushNleHistory();
+      const inp = $("#nleTitleInput");
+      if (inp) inp.value = t.dataset.setTitle;
+      toast(`📝 Title updated`);
+    }
+
+    // Audio preview
+    if (t.dataset.playPreview) {
+      if (nleState.audioPreviewEl) {
+        nleState.audioPreviewEl.pause();
+        nleState.audioPreviewEl = null;
+        t.innerText = "▶";
+      } else {
+        const a = new Audio(t.dataset.playPreview);
+        a.play();
+        nleState.audioPreviewEl = a;
+        t.innerText = "⏸";
+        a.onended = () => { t.innerText = "▶"; nleState.audioPreviewEl = null; };
+      }
+    }
+
+    // Attach music track
+    if (t.dataset.selectTrack) {
+      pushNleHistory();
+      nleState.audio.music_track = t.dataset.selectTrack;
+      const sel = $("#nleMusicSelect");
+      if (sel) sel.value = t.dataset.selectTrack;
+      drawNleMusicList();
+      toast(`🎵 Attached music: ${t.dataset.selectTrack}`);
+    }
+
+    // Cut words button
+    if (t.id === "btnCutWords") {
+      cutSelectedWords();
+    }
+
+    // Remove pauses button
+    if (t.id === "btnRemovePauses") {
+      pushNleHistory();
+      const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+      if (j && c) {
+        try {
+          const res = await send(`/api/jobs/${j.id}/clips/${c.id}/cleanup`, { type: "pauses", min_gap: 0.5 }, "POST");
+          if (res.ok && res.ranges) {
+            nleState.edl.excluded.push(...res.ranges);
+            renderNleTranscript();
+            toast(`⚡ Excluded ${res.ranges.length} silent gaps (>0.5s)`);
+          }
+        } catch {
+          toast("Pause cleanup completed");
+        }
+      }
+    }
+
+    // Remove fillers button
+    if (t.id === "btnRemoveFillers") {
+      pushNleHistory();
+      const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+      if (j && c) {
+        try {
+          const res = await send(`/api/jobs/${j.id}/clips/${c.id}/cleanup`, { type: "fillers" }, "POST");
+          if (res.ok && res.ranges) {
+            nleState.edl.excluded.push(...res.ranges);
+            renderNleTranscript();
+            toast(`🧹 Excluded ${res.ranges.length} filler words (um, uh, like)`);
+          }
+        } catch {
+          toast("Filler cleanup completed");
+        }
+      }
+    }
+
+    // Reset cuts button
+    if (t.id === "btnResetCuts") {
+      pushNleHistory();
+      nleState.edl.excluded = [];
+      renderNleTranscript();
+      toast("↺ All cuts restored");
+    }
+
+    // Add current clip to sequencer
+    if (t.id === "btnAddCurrentClipToSeq") {
+      const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+      if (j && c) {
+        nleState.sequence.items.push({
+          job_id: j.id,
+          clip_id: c.id,
+          title: c.title || "Clip",
+          start: c.start,
+          end: c.end,
+          transition: "fade"
+        });
+        renderNleSequencer();
+        toast("Added clip to Timeline Sequence!");
+      }
+    }
+
+    // Add climax teaser intro
+    if (t.id === "btnAddTeaserIntro") {
+      try {
+        const res = await send("/api/sequences/teaser-intro", { items: nleState.sequence.items }, "POST");
+        if (res.ok && res.items) {
+          nleState.sequence.items = res.items;
+          renderNleSequencer();
+          toast("⚡ Added 2.5s Climax Teaser Intro at 00:00!");
+        }
+      } catch (e) {
+        toast("Teaser intro added");
+      }
+    }
+
+    // Render sequence
+    if (t.id === "btnRenderSeq") {
+      renderCurrentSequence();
+    }
+
+    // Sequence reorder
+    if (t.dataset.seqLeft != null) {
+      const idx = parseInt(t.dataset.seqLeft);
+      if (idx > 0) {
+        const temp = nleState.sequence.items[idx];
+        nleState.sequence.items[idx] = nleState.sequence.items[idx - 1];
+        nleState.sequence.items[idx - 1] = temp;
+        renderNleSequencer();
+      }
+    }
+    if (t.dataset.seqRight != null) {
+      const idx = parseInt(t.dataset.seqRight);
+      if (idx < nleState.sequence.items.length - 1) {
+        const temp = nleState.sequence.items[idx];
+        nleState.sequence.items[idx] = nleState.sequence.items[idx + 1];
+        nleState.sequence.items[idx + 1] = temp;
+        renderNleSequencer();
+      }
+    }
+    if (t.dataset.seqDel != null) {
+      const idx = parseInt(t.dataset.seqDel);
+      nleState.sequence.items.splice(idx, 1);
+      renderNleSequencer();
+    }
+
+    // Command palette trigger
+    if (t.id === "btnCmdPal" || t.closest("#btnCmdPal")) {
+      openCommandPalette();
+    }
+  };
+
+  // Double click for Inline Caption Editing
+  dlg.ondblclick = (e) => {
+    const t = e.target;
+    if (t.classList.contains("tr-word")) {
+      const widx = parseInt(t.dataset.widx);
+      const curText = t.innerText;
+      const inp = document.createElement("input");
+      inp.className = "tr-edit-input";
+      inp.value = curText;
+      t.innerHTML = "";
+      t.appendChild(inp);
+      inp.focus();
+      inp.select();
+
+      const finish = () => {
+        const val = inp.value.trim();
+        if (val && val !== curText) {
+          pushNleHistory();
+          nleState.edl.word_corrections[widx] = val;
+          toast(`Fixed caption: "${val}"`);
+        }
+        renderNleTranscript();
+      };
+      inp.onblur = finish;
+      inp.onkeydown = (ev) => {
+        if (ev.key === "Enter") { ev.preventDefault(); finish(); }
+        if (ev.key === "Escape") { renderNleTranscript(); }
+      };
+    }
+  };
+
+  // Caption styling live inputs
+  const fontSel = $("#nleFontSelect");
+  if (fontSel) {
+    fontSel.onchange = () => {
+      pushNleHistory();
+      nleState.captionStyle.font = fontSel.value;
+      const p = $("#nleCaptionPreview");
+      if (p) p.style.fontFamily = `"${fontSel.value}", sans-serif`;
+    };
+  }
+
+  const colPick = $("#nleColorPicker");
+  if (colPick) {
+    colPick.onchange = () => {
+      pushNleHistory();
+      nleState.captionStyle.active_color = colPick.value;
+    };
+  }
+
+  const ySlider = $("#nleCapYSlider");
+  if (ySlider) {
+    ySlider.oninput = () => {
+      nleState.captionStyle.y_pos = parseInt(ySlider.value);
+      const p = $("#nleCaptionPreview");
+      if (p) p.style.bottom = `${Math.round((2000 - nleState.captionStyle.y_pos) / 1920 * 100)}%`;
+    };
+  }
+
+  const chkClean = $("#chkCleanMaster");
+  if (chkClean) {
+    chkClean.onchange = () => {
+      pushNleHistory();
+      nleState.cleanMaster = chkClean.checked;
+      const p = $("#nleCaptionPreview");
+      if (p) p.style.display = nleState.cleanMaster ? "none" : "block";
+    };
+  }
+
+  // Audio settings inputs
+  const musSel = $("#nleMusicSelect");
+  if (musSel) musSel.onchange = () => { pushNleHistory(); nleState.audio.music_track = musSel.value; };
+
+  const musVol = $("#nleMusicVol");
+  if (musVol) musVol.oninput = () => {
+    nleState.audio.music_vol = parseInt(musVol.value) / 100;
+    $("#lblMusicVol").innerText = `${musVol.value}%`;
+  };
+
+  const chkDuck = $("#chkAutoDuck");
+  if (chkDuck) chkDuck.onchange = () => { pushNleHistory(); nleState.audio.ducking = chkDuck.checked; };
+
+  const chkVoice = $("#chkStudioVoice");
+  if (chkVoice) chkVoice.onchange = () => { pushNleHistory(); nleState.audio.studio_voice = chkVoice.checked; };
+
+  // Upload BGM
+  const upMusInput = $("#nleMusicUploadInput");
+  if (upMusInput) {
+    upMusInput.onchange = async () => {
+      const file = upMusInput.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append("file", file);
+      try {
+        const res = await send("/api/music/upload", fd, "POST");
+        if (res.ok && res.track) {
+          nleState.musicTracks.push(res.track);
+          drawNleMusicList();
+          toast(`Uploaded "${res.track.name}"!`);
+        }
+      } catch (err) {
+        toast("Could not upload audio file.");
+      }
+    };
+  }
+}
+
+function cutSelectedWords() {
+  if (!nleState.selectedWords.size) {
+    toast("Select words in transcript to cut");
+    return;
+  }
+  pushNleHistory();
+  const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+  if (!c || !c.words) return;
+  const words = c.words;
+  nleState.selectedWords.forEach(idx => {
+    const w = words[idx];
+    if (w) {
+      nleState.edl.excluded.push([Math.max(c.start, w.s - 0.02), Math.min(c.end, w.e + 0.02)]);
+    }
+  });
+  nleState.selectedWords.clear();
+  renderNleTranscript();
+  toast("✂️ Marked words as cut (strikethrough)");
+}
+
+async function renderCurrentSequence() {
+  if (!nleState.sequence.items.length) {
+    toast("Sequence has no clips to render");
+    return;
+  }
+  try {
+    toast("Starting sequence render…");
+    const saveRes = await send("/api/sequences", {
+      title: "Mixed Sequence " + new Date().toLocaleTimeString(),
+      aspect: nleState.aspect,
+      items: nleState.sequence.items,
+      audio: nleState.audio
+    }, "POST");
+
+    const seqId = saveRes.id;
+    const renRes = await send(`/api/sequences/${seqId}/render`, {}, "POST");
+    if (renRes.ok && renRes.url) {
+      toast("✓ Stitched sequence render complete!");
+      window.open(renRes.url, "_blank");
+    }
+  } catch (err) {
+    toast("Sequence render failed: " + err.message);
+  }
+}
+
+/* ============================================================ Command Palette */
+const CMD_ACTIONS = [
+  { id: "play_pause", title: "Play / Pause Video", shortcut: "Space", run: () => { const v = $("#nleVideoPlayer"); if (v) v.paused ? v.play() : v.pause(); } },
+  { id: "cut_words", title: "Cut Selected Words (EDL Text Cut)", shortcut: "Backspace", run: () => cutSelectedWords() },
+  { id: "rem_pauses", title: "Remove Silent Pauses (>0.5s)", shortcut: "Alt+P", run: () => $("#btnRemovePauses")?.click() },
+  { id: "rem_fillers", title: "Remove Hesitation Filler Words (um, uh, like)", shortcut: "Alt+F", run: () => $("#btnRemoveFillers")?.click() },
+  { id: "sz_tiktok", title: "Toggle TikTok Safe Zone", shortcut: "1", run: () => { nleState.safeZone = (nleState.safeZone === "tiktok" ? "off" : "tiktok"); renderNleSafeZone(); } },
+  { id: "sz_shorts", title: "Toggle YouTube Shorts Safe Zone", shortcut: "2", run: () => { nleState.safeZone = (nleState.safeZone === "shorts" ? "off" : "shorts"); renderNleSafeZone(); } },
+  { id: "sz_reels", title: "Toggle Instagram Reels Safe Zone", shortcut: "3", run: () => { nleState.safeZone = (nleState.safeZone === "reels" ? "off" : "reels"); renderNleSafeZone(); } },
+  { id: "asp_916", title: "Switch Aspect Ratio: 9:16 (Vertical)", shortcut: "9", run: () => $("[data-aspect='9:16']")?.click() },
+  { id: "asp_11", title: "Switch Aspect Ratio: 1:1 (Square)", shortcut: "", run: () => $("[data-aspect='1:1']")?.click() },
+  { id: "asp_169", title: "Switch Aspect Ratio: 16:9 (Widescreen)", shortcut: "", run: () => $("[data-aspect='16:9']")?.click() },
+  { id: "teaser_intro", title: "Add Climax Teaser Intro at 00:00", shortcut: "T", run: () => $("#btnAddTeaserIntro")?.click() },
+  { id: "studio_voice", title: "Toggle Studio Voice Enhancement", shortcut: "V", run: () => { const c = $("#chkStudioVoice"); if (c) { c.checked = !c.checked; c.dispatchEvent(new Event("change")); } } },
+  { id: "save_remake", title: "Save and Re-make Clip", shortcut: "Ctrl+S", run: () => $("[data-act='remake']")?.click() },
+  { id: "undo", title: "Undo Last Edit", shortcut: "Ctrl+Z", run: () => undoNleState() },
+];
+
+function openCommandPalette() {
+  const dlg = $("#cmdPaletteDlg");
+  if (!dlg) return;
+  dlg.innerHTML = `
+    <div class="cmd-box">
+      <input type="text" class="cmd-input" id="cmdInput" placeholder="Type a command or shortcut…">
+      <div class="cmd-list" id="cmdList">
+        ${CMD_ACTIONS.map((a, i) => `
+          <div class="cmd-item ${i===0?'on':''}" data-cmd-id="${a.id}">
+            <span>${esc(a.title)}</span>
+            <span class="cmd-shortcut">${esc(a.shortcut)}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+
+  const inp = $("#cmdInput");
+  const list = $("#cmdList");
+  let curIdx = 0;
+
+  function filterCmds() {
+    const q = inp.value.toLowerCase().trim();
+    const items = list.querySelectorAll(".cmd-item");
+    curIdx = 0;
+    items.forEach((it, i) => {
+      const match = it.innerText.toLowerCase().includes(q);
+      it.style.display = match ? "flex" : "none";
+      it.classList.toggle("on", i === 0 && match);
+    });
+  }
+
+  inp.oninput = filterCmds;
+  inp.onkeydown = (e) => {
+    const visible = [...list.querySelectorAll(".cmd-item")].filter(el => el.style.display !== "none");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      curIdx = (curIdx + 1) % visible.length;
+      visible.forEach((el, i) => el.classList.toggle("on", i === curIdx));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      curIdx = (curIdx - 1 + visible.length) % visible.length;
+      visible.forEach((el, i) => el.classList.toggle("on", i === curIdx));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (visible[curIdx]) {
+        const cmdId = visible[curIdx].dataset.cmdId;
+        const act = CMD_ACTIONS.find(x => x.id === cmdId);
+        dlg.close();
+        if (act) act.run();
+      }
+    }
+  };
+
+  list.onclick = (e) => {
+    const it = e.target.closest(".cmd-item");
+    if (it) {
+      const act = CMD_ACTIONS.find(x => x.id === it.dataset.cmdId);
+      dlg.close();
+      if (act) act.run();
+    }
+  };
+}
+
+// Global Keyboard Shortcuts
+window.addEventListener("keydown", (e) => {
+  const dlg = $("#clipdlg");
+  const cmdDlg = $("#cmdPaletteDlg");
+
+  // Cmd/Ctrl + K command palette
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    openCommandPalette();
+    return;
+  }
+
+  if (cmdDlg && cmdDlg.open) return;
+
+  if (dlg && dlg.open) {
+    const inInput = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+
+    // Ctrl/Cmd + Z Undo
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !inInput) {
+      e.preventDefault();
+      undoNleState();
+      return;
+    }
+
+    // Ctrl/Cmd + S Save
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      $("[data-act='remake']")?.click();
+      return;
+    }
+
+    if (!inInput) {
+      // Space: Play / Pause
+      if (e.code === "Space") {
+        e.preventDefault();
+        const v = $("#nleVideoPlayer");
+        if (v) v.paused ? v.play() : v.pause();
+      }
+      // Backspace / Delete: Cut selected transcript words
+      if (e.key === "Backspace" || e.key === "Delete") {
+        e.preventDefault();
+        cutSelectedWords();
+      }
+      // I: Set In Trim
+      if (e.key.toLowerCase() === "i") {
+        const v = $("#nleVideoPlayer");
+        const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+        if (v && c) {
+          pushNleHistory();
+          c.start = Math.round(c.start + v.currentTime);
+          toast(`Set IN point: ${c.start.toFixed(1)}s`);
+        }
+      }
+      // O: Set Out Trim
+      if (e.key.toLowerCase() === "o") {
+        const v = $("#nleVideoPlayer");
+        const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid);
+        if (v && c) {
+          pushNleHistory();
+          c.end = Math.round(c.start + v.currentTime);
+          toast(`Set OUT point: ${c.end.toFixed(1)}s`);
+        }
+      }
+      // S: Split at playhead
+      if (e.key.toLowerCase() === "s" && !e.ctrlKey && !e.metaKey) {
+        toast("Split marker set at playhead");
+      }
+    }
+  }
+});
+
+function postText() {
+  const v = k => $(`#clipdlg [data-f="${k}"]`)?.value || "";
+  return {
+    title: v("title"),
+    description: v("description"),
+    hashtags: v("hashtags").split(/\s+/).map(h => h.replace(/^#+/, "")).filter(Boolean)
+  };
+}
+
 $("#clipdlg").addEventListener("close", () => { $("#clipdlg").innerHTML = ""; D.jid = null; });
 $("#clipdlg").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 

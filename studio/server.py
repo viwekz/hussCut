@@ -24,8 +24,8 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 
 from . import admin as admins
 from . import account, load
-from . import (accounts, ai, alerts, auth, brain, config, creators, ctx, db, facecam, jobs, live, media, posting,
-               profiles, render, safe, transcribe, usage)
+from . import (accounts, ai, alerts, audio, auth, brain, config, creators, ctx, db, edl, facecam, jobs, live, media, mixer, posting,
+               profiles, render, safe, speaker, transcribe, usage)
 
 from . import tools as _tools  # noqa: E402
 
@@ -1211,6 +1211,203 @@ def media_file(jid: str, name: str, download: int = 0):
         if clip:
             save_as = account.clip_title_name(clip, Path(name).stem) + ".mp4"
     return FileResponse(f, filename=save_as if download else None, headers={"Cache-Control": "private, max-age=300"})
+
+
+@app.get("/media/music/{name}")
+def media_music_file(name: str):
+    if not re.fullmatch(r"[\w\.\-]+", name):
+        raise HTTPException(404)
+    f = audio.MUSIC_DIR / name
+    if not f.is_file():
+        raise HTTPException(404, "Music track not found")
+    return FileResponse(f, media_type="audio/wav" if name.endswith(".wav") else "audio/mpeg")
+
+
+@app.get("/media/sfx/{name}")
+def media_sfx_file(name: str):
+    if not re.fullmatch(r"[\w\.\-]+", name):
+        raise HTTPException(404)
+    f = audio.SFX_DIR / name
+    if not f.is_file():
+        raise HTTPException(404, "Sound effect not found")
+    return FileResponse(f, media_type="audio/wav" if name.endswith(".wav") else "audio/mpeg")
+
+
+@app.get("/media/sequences/{seq_id}/{name}")
+def media_sequence_file(seq_id: str, name: str, download: int = 0):
+    if not re.fullmatch(r"[\w\.\-]+", name):
+        raise HTTPException(404)
+    d = config.user_dir(ctx.uid()) / "sequences" / seq_id
+    f = d / name
+    if not f.is_file():
+        raise HTTPException(404, "Sequence video not found")
+    return FileResponse(f, filename=name if download else None, headers={"Cache-Control": "private, max-age=300"})
+
+
+@app.get("/api/music")
+def api_list_music():
+    return audio.list_music()
+
+
+@app.post("/api/music/upload")
+async def api_upload_music(file: UploadFile = File(...)):
+    _throttle("musicup:" + ctx.uid(), 20, 300)
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in (".mp3", ".wav", ".m4a", ".ogg", ".aac"):
+        raise HTTPException(400, "Please upload an audio file (.mp3, .wav, .m4a, .ogg, .aac)")
+    safe_name = re.sub(r"[^\w\-]", "_", Path(file.filename).stem)[:40] + ext
+    target = audio.MUSIC_DIR / safe_name
+    content = await file.read()
+    if len(content) > 30 * 1024 * 1024:
+        raise HTTPException(400, "Audio track cannot be larger than 30MB")
+    target.write_bytes(content)
+    ctx.bump()
+    return {"ok": True, "track": {"id": safe_name, "name": safe_name.rsplit(".", 1)[0].replace("_", " ").title(), "filename": safe_name, "url": f"/media/music/{safe_name}"}}
+
+
+@app.get("/api/sfx")
+def api_list_sfx():
+    return audio.list_sfx()
+
+
+@app.get("/api/jobs/{jid}/clips/{cid}/export/srt")
+def export_clip_srt(jid: str, cid: str):
+    job, clip = _clip_or_404(jid, cid)
+    try:
+        all_w = json.loads((Path(job["dir"]) / "words.json").read_text(encoding="utf-8"))
+        s, e = float(clip["start"]), float(clip["end"])
+        words = [w for w in all_w if isinstance(w, dict) and s - 0.5 <= float(w.get("s", 0)) <= e + 0.5]
+    except Exception:
+        words = []
+    excluded = clip.get("edl", {}).get("excluded", [])
+    corrections = clip.get("edl", {}).get("word_corrections", {})
+    recalc = edl.calculate_recalculated_words(words, clip["start"], clip["end"], excluded, corrections)
+    srt_text = edl.generate_srt(recalc)
+    filename = f"{cid}.srt"
+    return Response(content=srt_text, media_type="text/plain; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.get("/api/jobs/{jid}/clips/{cid}/export/vtt")
+def export_clip_vtt(jid: str, cid: str):
+    job, clip = _clip_or_404(jid, cid)
+    try:
+        all_w = json.loads((Path(job["dir"]) / "words.json").read_text(encoding="utf-8"))
+        s, e = float(clip["start"]), float(clip["end"])
+        words = [w for w in all_w if isinstance(w, dict) and s - 0.5 <= float(w.get("s", 0)) <= e + 0.5]
+    except Exception:
+        words = []
+    excluded = clip.get("edl", {}).get("excluded", [])
+    corrections = clip.get("edl", {}).get("word_corrections", {})
+    recalc = edl.calculate_recalculated_words(words, clip["start"], clip["end"], excluded, corrections)
+    vtt_text = edl.generate_vtt(recalc)
+    filename = f"{cid}.vtt"
+    return Response(content=vtt_text, media_type="text/vtt; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.post("/api/jobs/{jid}/clips/{cid}/cleanup")
+def clip_cleanup_tool(jid: str, cid: str, body: dict = Body(...)):
+    job, clip = _clip_or_404(jid, cid)
+    try:
+        all_w = json.loads((Path(job["dir"]) / "words.json").read_text(encoding="utf-8"))
+        s, e = float(clip["start"]), float(clip["end"])
+        words = [w for w in all_w if isinstance(w, dict) and s - 0.5 <= float(w.get("s", 0)) <= e + 0.5]
+    except Exception:
+        words = []
+    tool_type = str(body.get("type", "pauses"))
+    if tool_type == "pauses":
+        min_gap = max(0.2, min(3.0, float(body.get("min_gap", 0.5))))
+        ranges = edl.find_pauses(words, clip["start"], clip["end"], min_gap=min_gap)
+        return {"ok": True, "type": "pauses", "ranges": ranges}
+    elif tool_type == "fillers":
+        ranges = edl.find_filler_words(words, clip["start"], clip["end"])
+        return {"ok": True, "type": "fillers", "ranges": ranges}
+    raise HTTPException(400, "Unknown cleanup tool type")
+
+
+@app.get("/api/sequences")
+def api_list_sequences():
+    return db.list_sequences(ctx.uid())
+
+
+@app.post("/api/sequences")
+def api_save_sequence(body: dict = Body(...)):
+    seq_id = str(body.get("id") or ("seq-" + time.strftime("%Y%m%d%H%M%S-") + uuid.uuid4().hex[:6]))
+    title = str(body.get("title") or "Untitled Sequence")[:180]
+    aspect = str(body.get("aspect") or "9:16")
+    items = body.get("items", [])
+    audio_cfg = body.get("audio", {})
+    res = db.save_sequence(ctx.uid(), seq_id, title=title, aspect=aspect, items=items, audio=audio_cfg)
+    ctx.bump()
+    return res
+
+
+@app.get("/api/sequences/{seq_id}")
+def api_get_sequence(seq_id: str):
+    seq = db.get_sequence(ctx.uid(), seq_id)
+    if not seq:
+        raise HTTPException(404, "Sequence not found")
+    return seq
+
+
+@app.delete("/api/sequences/{seq_id}")
+def api_delete_sequence(seq_id: str):
+    ok = db.delete_sequence(ctx.uid(), seq_id)
+    ctx.bump()
+    return {"ok": ok}
+
+
+@app.post("/api/sequences/teaser-intro")
+def api_teaser_intro(body: dict = Body(...)):
+    items = body.get("items", [])
+    new_items = mixer.add_climax_teaser_intro(items)
+    return {"ok": True, "items": new_items}
+
+
+@app.post("/api/sequences/{seq_id}/render")
+def api_render_sequence(seq_id: str):
+    seq = db.get_sequence(ctx.uid(), seq_id)
+    if not seq:
+        raise HTTPException(404, "Sequence not found")
+    items = seq.get("items", [])
+    if not items:
+        raise HTTPException(400, "Sequence has no items to render")
+
+    for it in items:
+        jid = it.get("job_id")
+        cid = it.get("clip_id")
+        if not it.get("src_path") and jid and cid:
+            job = jobs.get(jid)
+            if job:
+                cfile = Path(job["dir"]) / "clips" / f"{cid}.mp4"
+                if cfile.exists():
+                    it["src_path"] = str(cfile)
+                else:
+                    src_f = Path(job.get("source_path", ""))
+                    if src_f.exists():
+                        it["src_path"] = str(src_f)
+
+    seq_dir = config.user_dir(ctx.uid()) / "sequences" / seq_id
+    seq_dir.mkdir(parents=True, exist_ok=True)
+    out_file = seq_dir / "output.mp4"
+
+    try:
+        mixer.render_sequence(
+            items=items,
+            out_file=out_file,
+            aspect=seq.get("aspect", "9:16"),
+            music_settings=seq.get("audio"),
+            studio_voice=bool(seq.get("audio", {}).get("studio_voice", False))
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Render failed: {e}")
+
+    ctx.bump()
+    return {
+        "ok": True,
+        "url": f"/media/sequences/{seq_id}/output.mp4",
+        "file": "output.mp4",
+        "seq_id": seq_id
+    }
 
 
 # ================================================================ creators and live recording

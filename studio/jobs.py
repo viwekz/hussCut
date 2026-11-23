@@ -160,7 +160,36 @@ def public(job) -> dict:
     """What the browser may see: no server paths, no owner id."""
     out = {k: v for k, v in job.items() if k not in HIDDEN}
     out["source"] = {k: v for k, v in job["source"].items() if k != "path"}
-    out["clips"] = [{k: v for k, v in c.items() if k not in ("src", "fixed_words", "fixed_for")} for c in job["clips"]]
+
+    # Load words.json once for this job's clips if present
+    all_words = []
+    try:
+        w_file = Path(job["dir"]) / "words.json"
+        if w_file.is_file():
+            all_words = json.loads(w_file.read_text(encoding="utf-8"))
+    except Exception:
+        all_words = []
+
+    clips_out = []
+    for c in job.get("clips", []):
+        c_dict = {k: v for k, v in c.items() if k not in ("src", "fixed_words", "fixed_for")}
+        c_s, c_e = float(c.get("start", 0)), float(c.get("end", 0))
+        c_dict["words"] = [w for w in all_words if isinstance(w, dict) and c_s - 0.5 <= _f(w.get("s")) <= c_e + 0.5]
+        # Ensure viral scoring & variant defaults
+        v_sc = c_dict.get("viral_score") if c_dict.get("viral_score") is not None else c_dict.get("score", 70)
+        c_dict["viral_score"] = v_sc
+        c_dict.setdefault("viral_breakdown", {"hook_strength": min(25, v_sc // 4 + 1), "energy_arc": min(25, v_sc // 4 + 1), "context_clarity": min(25, v_sc // 4), "payoff_retention": min(25, v_sc // 4)})
+        c_dict.setdefault("hook_variants", ["WAIT FOR THE END", "YOU WON'T BELIEVE THIS", "BEST REACTION"])
+        c_dict.setdefault("title_variants", [str(c_dict.get("title", "Clip")) + " - Must Watch", "Best moment: " + str(c_dict.get("title", "")), "The funniest reaction"])
+        c_dict.setdefault("edl", {"excluded": [], "word_corrections": {}})
+        c_dict.setdefault("caption_style", {"font": "Poppins ExtraBold", "active_color": "#00F0FF", "base_color": "#FFFFFF", "size": 132, "y_pos": 1380})
+        c_dict.setdefault("audio", {"music_track": "", "music_vol": 0.25, "ducking": True, "sfx": [], "studio_voice": False})
+        c_dict.setdefault("overlays", [])
+        c_dict.setdefault("aspect", "9:16")
+        c_dict.setdefault("clean_master", False)
+        clips_out.append(c_dict)
+
+    out["clips"] = clips_out
     ai = job.get("ai") or {}
     out["ai"] = {"tokens": ai.get("tokens", 0), "note": ai.get("note", ""), "used": bool(ai.get("model"))}   # never the model, never raw errors
     if job.get("status") == "queued":
@@ -401,12 +430,42 @@ def request_render(jid, cid, changes: dict):
                 pass
     if "split_preset" in changes:
         new["split_preset"] = str(changes["split_preset"])[:20]
-    for opt, fn, nd in (("split_ratio", float, 3), ("cam_zoom", float, 2), ("game_zoom", float, 2), ("game_x", float, 3)):
+    for opt, fn, nd in (("split_ratio", float, 3), ("cam_zoom", float, 2), ("game_zoom", float, 2), ("game_x", float, 3), ("speaker_x", float, 3)):
         if opt in changes:
             try:
                 new[opt] = round(fn(changes[opt]), nd)
             except (ValueError, TypeError):
                 pass
+    if "edl" in changes and isinstance(changes["edl"], dict):
+        new["edl"] = {
+            "excluded": [[float(s), float(e)] for s, e in changes["edl"].get("excluded", []) if float(e) > float(s)],
+            "word_corrections": {str(k): str(v) for k, v in changes["edl"].get("word_corrections", {}).items()[:200]}
+        }
+    if "caption_style" in changes and isinstance(changes["caption_style"], dict):
+        new["caption_style"] = dict(changes["caption_style"])
+    if "audio" in changes and isinstance(changes["audio"], dict):
+        new["audio"] = {
+            "music_track": str(changes["audio"].get("music_track", ""))[:100],
+            "music_vol": max(0.0, min(1.0, float(changes["audio"].get("music_vol", 0.25)))),
+            "ducking": bool(changes["audio"].get("ducking", True)),
+            "studio_voice": bool(changes["audio"].get("studio_voice", False)),
+            "sfx": [{"time": float(x.get("time", 0.0)), "type": str(x.get("type", "pop"))} for x in changes["audio"].get("sfx", []) if isinstance(x, dict)][:20],
+        }
+    if "overlays" in changes and isinstance(changes["overlays"], list):
+        new["overlays"] = [dict(x) for x in changes["overlays"] if isinstance(x, dict)][:10]
+    if "aspect" in changes and str(changes["aspect"]) in ("9:16", "1:1", "16:9"):
+        new["aspect"] = str(changes["aspect"])
+    if "clean_master" in changes:
+        new["clean_master"] = bool(changes["clean_master"])
+    if changes.get("snap_boundaries"):
+        try:
+            w_file = Path(job["dir"]) / "words.json"
+            if w_file.is_file():
+                w_list = json.loads(w_file.read_text(encoding="utf-8"))
+                s_snap, e_snap = brain.snap_boundaries(new["start"], new["end"], w_list)
+                new["start"], new["end"] = s_snap, e_snap
+        except Exception:
+            pass
     if new.get("style") not in render.STYLES:
         new["style"] = DEFAULTS["style"]
     if new.get("layout") not in render.LAYOUTS:

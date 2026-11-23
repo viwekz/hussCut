@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from . import config, roman
+from . import audio, config, edl, roman, speaker
 from .media import NO_WINDOW, run
 
 W, H = config.OUT_W, config.OUT_H
@@ -83,12 +83,13 @@ LAYOUTS = {"blur": "Full frame + blurred fill",
            "split_cam_bottom": "Auto Facecam Split (Gameplay Top + Creator Bottom)",
            "split_cam_pip": "Facecam PIP (Corner Cam + Full Gameplay)",
            "split_cam_custom": "Custom Split Layout",
+           "speaker_track": "Auto-Reframe (Active Speaker Tracking)",
            "zoom": "Zoomed in + blurred fill", "crop": "Fill the screen (centre crop)",
            "left": "Fill the screen, keep the left side", "right": "Fill the screen, keep the right side",
            "fit": "Full frame on black", "split": "Split screen: left half on top, right half below (two people)",
            "gameplay": "Gameplay fills the screen, facecam in the corner"}
 SPLIT_LAYOUTS = ("facecam_split", "split_cam", "split_cam_top", "split_cam_bottom", "split_cam_pip", "split_cam_custom")
-_FILLS = ("crop", "left", "right", "gameplay", "facecam_split", "split_cam", "split_cam_top", "split_cam_bottom", "split_cam_pip", "split_cam_custom")      # layouts where the picture covers the whole frame
+_FILLS = ("crop", "left", "right", "gameplay", "speaker_track", "facecam_split", "split_cam", "split_cam_top", "split_cam_bottom", "split_cam_pip", "split_cam_custom")      # layouts where the picture covers the whole frame
 
 
 def _ts(t):
@@ -171,8 +172,29 @@ def _hook_events(hook, dur, y):
     return ev
 
 
-def build_ass(words, start, end, hook, style_name, highlight, hook_y, cap_y) -> str:
-    st = STYLES.get(style_name, STYLES["bounce"])
+def build_ass(words, start, end, hook, style_name, highlight, hook_y, cap_y, caption_style=None) -> str:
+    st = dict(STYLES.get(style_name, STYLES["bounce"]))
+    if isinstance(caption_style, dict):
+        if caption_style.get("font") and caption_style["font"] in FONT_FILES:
+            st["font"] = caption_style["font"]
+        if caption_style.get("size"):
+            try:
+                st["size"] = max(40, min(220, int(caption_style["size"])))
+            except (ValueError, TypeError):
+                pass
+        if caption_style.get("active_color"):
+            c = str(caption_style["active_color"]).lstrip("#")
+            if len(c) == 6:
+                st["active"] = c[4:6] + c[2:4] + c[0:2]
+        if caption_style.get("base_color"):
+            c = str(caption_style["base_color"]).lstrip("#")
+            if len(c) == 6:
+                st["base"] = c[4:6] + c[2:4] + c[0:2]
+        if caption_style.get("y_pos") is not None:
+            try:
+                cap_y = max(100, min(1800, int(caption_style["y_pos"])))
+            except (ValueError, TypeError):
+                pass
     words = [dict(w, s=w["s"] - CAPTION_LEAD, e=w["e"] - CAPTION_LEAD) for w in words]
     strong = {_key(h) for h in highlight if _key(h)}
     head = f"""[Script Info]
@@ -296,6 +318,11 @@ def _filter(layout, fg_h, facecam=None, clip=None):
                     f"crop={W}:{h_bot}:(in_w-{W})*{game_x}:(in_h-{h_bot})/2,setsar=1[game];"
                     f"[cam][game]vstack=inputs=2,drawbox=y={h_top-2}:color=black@0.9:width=iw:height=4:t=fill,setsar=1[v0];")
 
+    if layout == "speaker_track":
+        spk_x = float((clip or {}).get("speaker_x", 0.5))
+        return (f"[0:v]fps={config.OUT_FPS},scale=-2:{H}:force_original_aspect_ratio=increase,"
+                f"crop={W}:{H}:min(max(0, (in_w-{W})*{spk_x:.3f}), in_w-{W}):0,setsar=1[v0];")
+
     if layout == "gameplay" and facecam:
         # The game fills the screen, and the webcam sits in the top corner of it, so a viewer sees
         # the play and the face at the same time.
@@ -348,32 +375,142 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
     face = clip.get("facecam")
     if layout == "gameplay" and not (face and len(face) == 4):
         layout = "crop"     # no webcam found: the game fills the screen, which is still the right shape
+    if layout == "speaker_track" and "speaker_x" not in clip:
+        clip["speaker_x"] = speaker.track_speaker_center(src, start, end, src_w, src_h)
+
     hook_y = _hook_y(layout, hook_y, face)
-    ass = build_ass(words if clip.get("captions", True) else [], start, end, clip.get("hook", ""), clip.get("style", "bounce"),
-                    clip.get("highlight_words", []), hook_y, cap_y)
-    # The clip is made in a short work folder and moved into place afterwards. The caption step of ffmpeg cannot
-    # open files whose full path is longer than 260 characters on Windows, which a data folder deep inside other
-    # folders easily reaches. Inside the work folder every name is short and relative (a drive colon would also
-    # break the filter syntax).
+
+    # Check for EDL cuts (excluded intervals)
+    excluded = clip.get("edl", {}).get("excluded", [])
+    corrections = clip.get("edl", {}).get("word_corrections", {})
+    keep_segments = None
+    clean_master = bool(clip.get("clean_master", False))
+    caption_style = clip.get("caption_style")
+
+    if excluded:
+        keep_segments = edl.calculate_edl_segments(start, end, excluded)
+        if len(keep_segments) > 1 or (len(keep_segments) == 1 and (keep_segments[0][0] > start + 0.05 or keep_segments[0][1] < end - 0.05)):
+            recalculated_words = edl.calculate_recalculated_words(words, start, end, excluded, corrections)
+            total_dur = sum(ke - ks for ks, ke in keep_segments)
+            ass = build_ass(recalculated_words if clip.get("captions", True) and not clean_master else [],
+                            0.0, total_dur, clip.get("hook", ""), clip.get("style", "bounce"),
+                            clip.get("highlight_words", []), hook_y, cap_y, caption_style=caption_style)
+        else:
+            keep_segments = None
+            ass = build_ass(words if clip.get("captions", True) and not clean_master else [], start, end, clip.get("hook", ""), clip.get("style", "bounce"),
+                            clip.get("highlight_words", []), hook_y, cap_y, caption_style=caption_style)
+    else:
+        ass = build_ass(words if clip.get("captions", True) and not clean_master else [], start, end, clip.get("hook", ""), clip.get("style", "bounce"),
+                        clip.get("highlight_words", []), hook_y, cap_y, caption_style=caption_style)
+
     work = Path(tempfile.mkdtemp(prefix="pk"))
     try:
-        # The title and description are also written into the file itself, for any place that reads them from it.
         meta = {"title": clip.get("title") or "", "description": clip.get("description") or "", "comment": clip.get("description") or ""}
-        return _render_in(work, src, out_dir, name, start, end, layout, fg_h, ass, face=face, meta=meta, clip=clip)
+        return _render_in(work, src, out_dir, name, start, end, layout, fg_h, ass, face=face, meta=meta, clip=clip,
+                          keep_segments=keep_segments, clean_master=clean_master)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
-def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layout, fg_h, ass: str, face=None, meta=None, clip=None) -> dict:
+def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layout, fg_h, ass: str, face=None, meta=None,
+               clip=None, keep_segments=None, clean_master=False) -> dict:
     global _qsv_ok
     (work / f"{name}.ass").write_text(ass, encoding="utf-8")
     (work / "f").mkdir()
     for f in config.FONTS_DIR.glob("*.ttf"):
         shutil.copyfile(f, work / "f" / f.name)
-    fc = _filter(layout, fg_h, face, clip=clip) + f"[v0]ass={name}.ass:fontsdir=f[v]"
-    base = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src),
-            "-filter_complex", fc, "-map", "[v]", "-map", "0:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-            "-c:a", "aac", "-b:a", "160k", "-ar", "48000"]
+
+    clip_opts = clip or {}
+    audio_cfg = clip_opts.get("audio", {})
+    has_music = bool(audio_cfg.get("music_track"))
+    music_track = audio_cfg.get("music_track")
+    music_vol = float(audio_cfg.get("music_vol", 0.25))
+    ducking = bool(audio_cfg.get("ducking", True))
+    sfx_list = audio_cfg.get("sfx", [])
+    studio_voice = bool(audio_cfg.get("studio_voice", False))
+
+    inputs = []
+    prep_filter = ""
+    v_in = "[0:v]"
+    a_in = "[0:a]"
+
+    if keep_segments:
+        inputs += ["-i", str(src)]
+        trims_v = []
+        trims_a = []
+        for i, (ks, ke) in enumerate(keep_segments):
+            trims_v.append(f"[0:v]trim=start={ks:.2f}:end={ke:.2f},setpts=PTS-STARTPTS[v_trim_{i}]")
+            trims_a.append(f"[0:a]atrim=start={ks:.2f}:end={ke:.2f},asetpts=PTS-STARTPTS[a_trim_{i}]")
+        concat_v_in = "".join(f"[v_trim_{i}]" for i in range(len(keep_segments)))
+        concat_a_in = "".join(f"[a_trim_{i}]" for i in range(len(keep_segments)))
+        prep_filter = ";".join(trims_v + trims_a) + f";{concat_v_in}concat=n={len(keep_segments)}:v=1:a=0[v_pre];{concat_a_in}concat=n={len(keep_segments)}:v=0:a=1[a_pre];"
+        v_in = "[v_pre]"
+        a_in = "[a_pre]"
+    else:
+        inputs += ["-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src)]
+
+    raw_layout_fc = _filter(layout, fg_h, face, clip=clip)
+    if v_in != "[0:v]":
+        raw_layout_fc = raw_layout_fc.replace("[0:v]", v_in)
+
+    v_filter = prep_filter + raw_layout_fc
+    cur_v = "[v0]"
+
+    if not clean_master and clip_opts.get("captions", True):
+        v_filter += f"{cur_v}ass={name}.ass:fontsdir=f[v_sub];"
+        cur_v = "[v_sub]"
+
+    # Visual overlays
+    overlays = clip_opts.get("overlays", [])
+    for ov_idx, ov in enumerate(overlays):
+        ov_path = Path(ov.get("src", ""))
+        if ov_path.exists():
+            inputs += ["-i", str(ov_path)]
+            next_in_idx = (len(inputs) - 1) if not keep_segments else len(inputs) - 1
+            ov_s = float(ov.get("start", 0.0))
+            ov_e = float(ov.get("end", 9999.0))
+            ov_x = ov.get("x", "(W-w)/2")
+            ov_y = ov.get("y", "(H-h)/2")
+            next_v = f"[v_ov_{ov_idx}]"
+            v_filter += f"[{next_in_idx}:v]scale=trunc(iw*0.4/2)*2:-2[ov_scaled_{ov_idx}];{cur_v}[ov_scaled_{ov_idx}]overlay={ov_x}:{ov_y}:enable='between(t,{ov_s},{ov_e})'{next_v};"
+            cur_v = next_v
+
+    # Audio filtergraph
+    music_file = audio.MUSIC_DIR / music_track if has_music and music_track else None
+    if has_music and music_file and music_file.exists():
+        inputs += ["-i", str(music_file)]
+        music_in_idx = (len(inputs) - 1) if not keep_segments else len(inputs) - 1
+        af_fc, a_out = audio.build_audio_filtergraph(
+            has_music=True,
+            music_filename=music_track,
+            music_vol=music_vol,
+            ducking=ducking,
+            sfx_list=sfx_list,
+            studio_voice=studio_voice,
+            voice_input=a_in,
+            music_input=f"[{music_in_idx}:a]"
+        )
+        total_fc = v_filter.rstrip(";") + ";" + af_fc
+        a_map = a_out
+    else:
+        if studio_voice:
+            af_fc, a_out = audio.build_audio_filtergraph(
+                has_music=False,
+                studio_voice=True,
+                voice_input=a_in,
+            )
+            total_fc = v_filter.rstrip(";") + ";" + af_fc
+            a_map = a_out
+        else:
+            total_fc = v_filter.rstrip(";")
+            a_map = a_in
+
+    base = ["ffmpeg", "-y", "-v", "error", *inputs,
+            "-filter_complex", total_fc,
+            "-map", cur_v, "-map", a_map]
+    if not (has_music or studio_voice):
+        base += ["-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
+    base += ["-c:a", "aac", "-b:a", "160k", "-ar", "48000"]
     for k, v in (meta or {}).items():
         if v:
             base += ["-metadata", f"{k}={v}"]
@@ -399,5 +536,7 @@ def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layo
     run(["ffmpeg", "-y", "-v", "error", "-ss", f"{cover_t:.2f}", "-i", f"{name}.mp4", "-frames:v", "1",
          "-q:v", "3", f"{name}.jpg"], cwd=work)
     for ext in ("mp4", "jpg", "ass"):
-        shutil.move(str(work / f"{name}.{ext}"), str(out_dir / f"{name}.{ext}"))
+        p_file = work / f"{name}.{ext}"
+        if p_file.exists():
+            shutil.move(str(p_file), str(out_dir / f"{name}.{ext}"))
     return {"file": f"{name}.mp4", "cover": f"{name}.jpg", "layout": layout}
