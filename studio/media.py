@@ -1,7 +1,9 @@
 """Getting video in: link download, probing, audio extraction, loudness."""
 import contextlib
 import json
+import os
 import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -27,6 +29,72 @@ _BOT_CHECK = re.compile(r"not a bot|confirm you.?re not|sign in to confirm(?! yo
 
 class YouTubeBlocked(RuntimeError):
     pass
+
+
+class MediaError(RuntimeError):
+    def __init__(self, message: str, raw_error: str = "", code: int = 422):
+        super().__init__(message)
+        self.message = message
+        self.raw_error = raw_error
+        self.code = code
+
+
+def friendly_error(err: Exception, url: str = "") -> str:
+    """Map yt-dlp / network exceptions to clear, actionable user messages."""
+    text = str(err or "").strip()
+
+    # 1. Missing JS Runtime
+    if re.search(r"No supported JavaScript runtime|JS runtime|EJS|phantomjs", text, re.I):
+        return ("YouTube requires a JavaScript runtime (Node.js or Deno) to solve video challenges. "
+                "Please install Node.js or Deno on the server, or click 'Update yt-dlp' under Settings → Connected apps.")
+
+    # 2. Bot detection / Sign-in required
+    if re.search(r"not a bot|confirm you.?re not|Sign in to confirm(?! your age)|LOGIN_REQUIRED|captcha|automated queries", text, re.I):
+        return ("YouTube requires sign-in verification (bot check). "
+                "Please upload fresh YouTube cookies under Settings → Connected apps (export from a private browser window), "
+                "or choose a browser cookies fallback in Settings.")
+
+    # 3. Private Video
+    if re.search(r"This video is private|Private video", text, re.I):
+        return "This video is private. Only authorized accounts can view it."
+
+    # 4. Members only / Paid
+    if re.search(r"members-only|Join this channel to get access|requires purchase|payment", text, re.I):
+        return "This video is members-only or requires a subscription/purchase."
+
+    # 5. Age-restricted
+    if re.search(r"Sign in to confirm your age|age-restricted|confirm your age", text, re.I):
+        return "This video is age-restricted and requires YouTube cookies from an account over 18."
+
+    # 6. Geo-blocked
+    if re.search(r"not available in your country|uploader has not made this video available|geoblocked", text, re.I):
+        return "This video is not available in the server's region (geo-blocked by YouTube)."
+
+    # 7. Video removed / unavailable / 404
+    if re.search(r"Video unavailable|has been removed|does not exist|HTTP Error 404", text, re.I):
+        return "This video is unavailable or has been removed from YouTube."
+
+    # 8. Signature / Format / Outdated yt-dlp
+    if re.search(r"Requested format is not available|nsig|Signature extraction failed|player response", text, re.I):
+        return ("YouTube updated its player signature format. "
+                "Please click 'Update yt-dlp' under Settings → Connected apps to fetch the latest extractor.")
+
+    # 9. Network / DNS error
+    if re.search(r"getaddrinfo failed|Connection refused|Network is unreachable|timed out|Timeout", text, re.I):
+        return "Could not connect to YouTube. Please check the server's network connection and DNS."
+
+    # 10. Browser cookie lock / permission error
+    if re.search(r"Could not copy Chrome cookie database|Permission denied.*Cookies", text, re.I):
+        return ("Could not read browser cookies because the browser is currently running. "
+                "Please close your browser or upload a cookies.txt file under Settings → Connected apps.")
+
+    # 11. Clean fallback
+    clean = re.sub(r"^(?:ERROR:\s*)?(?:\[\w+\]\s*)?[A-Za-z0-9_-]{6,16}:\s*", "", text)
+    clean = re.sub(r"^(?:ERROR:\s*)", "", clean).strip()
+    if clean and len(clean) < 180:
+        return f"Couldn't open that video: {clean}"
+    return "Couldn't open that video. Check that the link is public and complete."
+
 
 
 def is_youtube(url: str) -> bool:
@@ -99,17 +167,196 @@ class _Quiet:
     def error(self, m): pass
 
 
-def cookie_opts() -> dict:
-    """The YouTube cookies an admin saved (Settings, Connected apps), if any. yt-dlp only sends them to YouTube."""
-    return {"cookiefile": str(config.YT_COOKIES)} if config.YT_COOKIES.is_file() else {}
+def cookie_opts(with_browser: bool = True) -> dict:
+    """The YouTube cookies an admin saved (Settings, Connected apps), or browser cookies fallback."""
+    if config.YT_COOKIES.is_file():
+        return {"cookiefile": str(config.YT_COOKIES)}
+    if with_browser:
+        browser = config.get_yt_browser()
+        if browser and browser in ("chrome", "firefox", "edge", "brave", "opera", "vivaldi", "safari"):
+            return {"cookiesfrombrowser": (browser, None, None, None)}
+    return {}
 
 
-def _ydl(opts):
+def find_js_runtimes() -> dict:
+    """Build dict of runtime: {path: ...} for yt-dlp YoutubeDL(js_runtimes=...)."""
+    runtimes = {}
+
+    # 1. Deno: check PATH, ~/.deno/bin, %USERPROFILE%\.deno\bin
+    deno_path = shutil.which("deno")
+    if not deno_path:
+        home = Path.home()
+        for p in (home / ".deno" / "bin" / "deno", home / ".deno" / "bin" / "deno.exe"):
+            if p.is_file():
+                deno_path = str(p)
+                break
+    runtimes["deno"] = {"path": deno_path} if deno_path else {}
+
+    # 2. Node: check PATH, common install locations
+    node_path = shutil.which("node")
+    if not node_path:
+        for p in [
+            Path(r"C:\Program Files\nodejs\node.exe"),
+            Path(r"C:\Program Files (x86)\nodejs\node.exe"),
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "node" / "node.exe",
+            Path(os.environ.get("APPDATA", "")) / "npm" / "node.exe",
+            Path("/usr/bin/node"),
+            Path("/usr/local/bin/node"),
+        ]:
+            if p.is_file():
+                node_path = str(p)
+                break
+    runtimes["node"] = {"path": node_path} if node_path else {}
+
+    return runtimes
+
+
+def find_js_runtimes_info() -> dict:
+    """Detailed JS runtime information for diagnostics."""
+    info_dict = {
+        "deno": {"available": False, "version": "", "path": ""},
+        "node": {"available": False, "version": "", "path": ""},
+        "active": None,
+    }
+
+    # Check Deno
+    home = Path.home()
+    deno_candidates = [shutil.which("deno"), str(home / ".deno" / "bin" / "deno.exe"), str(home / ".deno" / "bin" / "deno")]
+    for cand in deno_candidates:
+        if cand and Path(cand).is_file():
+            try:
+                res = subprocess.run([cand, "--version"], capture_output=True, text=True, timeout=5, creationflags=NO_WINDOW)
+                if res.returncode == 0:
+                    v = res.stdout.splitlines()[0] if res.stdout else "deno"
+                    info_dict["deno"] = {"available": True, "version": v, "path": cand}
+                    break
+            except Exception:
+                pass
+
+    # Check Node
+    node_candidates = [
+        shutil.which("node"),
+        r"C:\Program Files\nodejs\node.exe",
+        r"C:\Program Files (x86)\nodejs\node.exe",
+        str(Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "node" / "node.exe"),
+        str(Path(os.environ.get("APPDATA", "")) / "npm" / "node.exe"),
+        "/usr/bin/node",
+        "/usr/local/bin/node",
+    ]
+    for cand in node_candidates:
+        if cand and Path(cand).is_file():
+            try:
+                res = subprocess.run([cand, "--version"], capture_output=True, text=True, timeout=5, creationflags=NO_WINDOW)
+                if res.returncode == 0:
+                    v = res.stdout.strip()
+                    info_dict["node"] = {"available": True, "version": v, "path": cand}
+                    break
+            except Exception:
+                pass
+
+    if info_dict["deno"]["available"]:
+        info_dict["active"] = "deno"
+    elif info_dict["node"]["available"]:
+        info_dict["active"] = "node"
+
+    return info_dict
+
+
+def cookies_diagnostic() -> dict:
+    """Diagnostic info about current YouTube cookie configuration."""
+    f = config.YT_COOKIES
+    browser = config.get_yt_browser()
+    if f.is_file():
+        try:
+            content = f.read_text(encoding="utf-8", errors="ignore")
+            lines = [l for l in content.splitlines() if l.strip() and not l.startswith("#")]
+            has_yt = any("youtube.com" in l for l in lines)
+            return {
+                "status": "loaded" if has_yt else "invalid",
+                "label": f"Loaded ({len(lines)} cookies)" if has_yt else "Invalid cookie format",
+                "count": len(lines),
+                "browser": None,
+                "has_youtube": has_yt,
+                "updated": int(f.stat().st_mtime),
+            }
+        except Exception:
+            return {"status": "error", "label": "Error reading cookie file", "count": 0, "browser": None}
+    elif browser:
+        return {
+            "status": "browser",
+            "label": f"Browser fallback: {browser.title()}",
+            "count": 0,
+            "browser": browser,
+        }
+    return {
+        "status": "not_set",
+        "label": "Not configured",
+        "count": 0,
+        "browser": None,
+    }
+
+
+def _ydl(opts, with_cookies=True):
     import yt_dlp
-    # a channel or playlist link is answered as "a list" straight away, never walked video by video
-    return yt_dlp.YoutubeDL({"noplaylist": True, "quiet": True, "no_warnings": True, "logger": _Quiet(),
-                             "extract_flat": "in_playlist", "playlistend": 1, "socket_timeout": 20,
-                             "concurrent_fragment_downloads": 4, **cookie_opts(), **opts})
+    c_opts = cookie_opts() if with_cookies else {}
+    runtimes = find_js_runtimes()
+    base_extractor_args = {
+        "youtube": {
+            "player_client": ["default", "android", "web_safari", "tv_embedded", "android_vr"]
+        }
+    }
+    merged_extractor_args = {**base_extractor_args, **opts.pop("extractor_args", {})}
+
+    final_opts = {
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "logger": _Quiet(),
+        "extract_flat": "in_playlist",
+        "playlistend": 1,
+        "socket_timeout": 20,
+        "concurrent_fragment_downloads": 4,
+        "extractor_args": merged_extractor_args,
+        **c_opts,
+        **opts,
+    }
+    if runtimes:
+        final_opts["js_runtimes"] = runtimes
+    return yt_dlp.YoutubeDL(final_opts)
+
+
+def test_youtube_link(url: str) -> dict:
+    """Test format extraction on a link without downloading video data."""
+    with _youtube_guard(url):
+        i = None
+        has_cookies = bool(cookie_opts())
+        used_cookies = has_cookies
+        try:
+            with _ydl({"quiet": True}, with_cookies=True) as ydl:
+                i = ydl.extract_info(url, download=False)
+        except Exception as e:
+            if has_cookies and ("Requested format is not available" in str(e) or "cookie" in str(e).lower()):
+                with _ydl({"quiet": True}, with_cookies=False) as ydl:
+                    i = ydl.extract_info(url, download=False)
+                used_cookies = False
+            else:
+                raise
+
+        formats = i.get("formats") or []
+        video_formats = [f for f in formats if f.get("vcodec") and f.get("vcodec") != "none"]
+        audio_formats = [f for f in formats if f.get("acodec") and f.get("acodec") != "none"]
+        return {
+            "title": i.get("title") or "Unknown Title",
+            "duration": float(i.get("duration") or 0),
+            "uploader": i.get("uploader") or i.get("channel") or "",
+            "is_live": bool(i.get("is_live")),
+            "thumbnail": i.get("thumbnail") or "",
+            "total_formats": len(formats),
+            "video_formats": len(video_formats),
+            "audio_formats": len(audio_formats),
+            "client_used": i.get("extractor_key") or "YouTube",
+            "cookies_used": used_cookies,
+        }
 
 
 def _video_format(height):
@@ -126,11 +373,35 @@ def _biggest(job_dir: Path, stem: str) -> Path:
 
 def info(url: str) -> dict:
     """Title, channel and length, without downloading anything."""
-    with _youtube_guard(url), _ydl({}) as ydl:
-        i = ydl.extract_info(url, download=False)
+    with _youtube_guard(url):
+        i = None
+        last_err = None
+        has_cookies = bool(cookie_opts())
+
+        # Attempt 1: Standard extraction with configured cookies
+        try:
+            with _ydl({}, with_cookies=True) as ydl:
+                i = ydl.extract_info(url, download=False)
+        except Exception as e:
+            last_err = e
+
+        # Attempt 2: If cookies caused format or auth issue, retry without cookies
+        if i is None and has_cookies and ("Requested format is not available" in str(last_err) or "cookie" in str(last_err).lower()):
+            try:
+                with _ydl({}, with_cookies=False) as ydl:
+                    i = ydl.extract_info(url, download=False)
+            except Exception as e2:
+                if _BOT_CHECK.search(str(e2)):
+                    last_err = e2
+
+        if i is None and last_err:
+            raise last_err
+
     return {"title": i.get("title") or "", "uploader": i.get("uploader") or i.get("channel") or "",
             "duration": float(i.get("duration") or 0), "is_live": bool(i.get("is_live")),
             "thumbnail": i.get("thumbnail") or "", "kind": i.get("_type") or "video"}
+
+
 
 
 def youtube_words(url: str):
@@ -261,17 +532,37 @@ def download_audio(url: str, job_dir: Path, on_progress=None) -> Path:
         if on_progress and d.get("status") == "downloading" and total:
             on_progress(d.get("downloaded_bytes", 0) / total)
 
-    with _youtube_guard(url), _ydl({"format": "ba[ext=m4a]/ba/worst", "outtmpl": str(job_dir / "audio_src.%(ext)s"),
-               "progress_hooks": [hook]}) as ydl:
-        ydl.download([url])
+    opts = {"format": "ba[ext=m4a]/ba/worst", "outtmpl": str(job_dir / "audio_src.%(ext)s"),
+            "progress_hooks": [hook]}
+    has_cookies = bool(cookie_opts())
+    with _youtube_guard(url):
+        try:
+            with _ydl(opts, with_cookies=True) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            if has_cookies and ("Requested format is not available" in str(e) or "cookie" in str(e).lower()):
+                with _ydl(opts, with_cookies=False) as ydl:
+                    ydl.download([url])
+            else:
+                raise
     return _biggest(job_dir, "audio_src")
 
 
 def download(url: str, job_dir: Path, height=720) -> Path:
     """The whole video. Used for shorter videos, where this is quicker than fetching pieces."""
-    with _youtube_guard(url), _ydl({"format": _video_format(height), "merge_output_format": "mp4",
-                                    "outtmpl": str(job_dir / "source.%(ext)s")}) as ydl:
-        ydl.download([url])
+    opts = {"format": _video_format(height), "merge_output_format": "mp4",
+            "outtmpl": str(job_dir / "source.%(ext)s")}
+    has_cookies = bool(cookie_opts())
+    with _youtube_guard(url):
+        try:
+            with _ydl(opts, with_cookies=True) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            if has_cookies and ("Requested format is not available" in str(e) or "cookie" in str(e).lower()):
+                with _ydl(opts, with_cookies=False) as ydl:
+                    ydl.download([url])
+            else:
+                raise
     return _biggest(job_dir, "source")
 
 
@@ -284,8 +575,17 @@ def download_section(url: str, out_dir: Path, stem: str, start: float, end: floa
             "download_ranges": download_range_func(None, [(max(0.0, start), end)])}
     if exact:
         opts["force_keyframes_at_cuts"] = True
-    with _youtube_guard(url), _ydl(opts) as ydl:
-        ydl.download([url])
+    has_cookies = bool(cookie_opts())
+    with _youtube_guard(url):
+        try:
+            with _ydl(opts, with_cookies=True) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            if has_cookies and ("Requested format is not available" in str(e) or "cookie" in str(e).lower()):
+                with _ydl(opts, with_cookies=False) as ydl:
+                    ydl.download([url])
+            else:
+                raise
     return _biggest(out_dir, stem)
 
 

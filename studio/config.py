@@ -127,6 +127,29 @@ YT_TRANSCRIPT = env("PEAKCUT_YT_TRANSCRIPT", "1") != "0"
 # YouTube often refuses servers in data centres ("sign in to confirm you're not a bot"). Cookies from a signed-in
 # YouTube account get past that: an admin pastes them under Settings, Connected apps, and they are kept in this file.
 YT_COOKIES = Path(env("PEAKCUT_YT_COOKIES") or DATA_DIR / "youtube-cookies.txt")
+YT_BROWSER_FILE = DATA_DIR / "youtube-browser.txt"
+
+
+def get_yt_browser() -> str:
+    """Configured browser fallback for cookies (e.g. 'chrome', 'edge', 'firefox')."""
+    if env("PEAKCUT_YT_BROWSER"):
+        return env("PEAKCUT_YT_BROWSER").strip().lower()
+    if YT_BROWSER_FILE.is_file():
+        try:
+            return YT_BROWSER_FILE.read_text(encoding="utf-8").strip().lower()
+        except OSError:
+            pass
+    return ""
+
+
+def set_yt_browser(browser: str):
+    """Save or clear browser cookie fallback."""
+    b = (browser or "").strip().lower()
+    if b:
+        YT_BROWSER_FILE.write_text(b, encoding="utf-8")
+    else:
+        YT_BROWSER_FILE.unlink(missing_ok=True)
+
 # the compact model for processors; a machine with a graphics card sets PEAKCUT_ASR_MODEL to the full-precision one
 ASR_MODEL_NAME = env("PEAKCUT_ASR_MODEL", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8")
 ASR_MODEL_DIR = MODELS_DIR / ASR_MODEL_NAME

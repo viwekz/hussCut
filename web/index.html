@@ -2413,21 +2413,76 @@ async function drawSettings() {
   } catch (e) { body.innerHTML = `<div class="set-load">${esc(e.message)}</div>`; }
 }
 async function ytCookiesCard(logo) {
+  const diag = await api("/api/youtube/diagnostics").catch(() => null);
   const st = await api("/api/youtube-cookies").catch(() => null);
-  if (!st) return "";
+  if (!st && !diag) return "";
   const open = S.setupOpen === "ytdl";
-  const act = `<button class="btn sm ${st.saved ? "ghost" : "primary"}" data-act="appsetup" data-p="ytdl">${ic("cog")}${st.saved ? "Replace" : "Add cookies"}</button>`
-    + (st.saved ? `<button class="btn sm ghost" data-act="ytcookies" data-remove="1">Remove</button>` : "");
-  const panel = open ? `<div class="appsetup">
-      <p class="sub">YouTube refuses many servers with "Sign in to confirm you're not a bot". Cookies from a signed-in YouTube account get past it. Use a spare Google account, not your main one.</p>
-      <ol><li>In a private browser window, sign in to YouTube with that account.</li>
-        <li>With an extension such as <b>Get cookies.txt LOCALLY</b>, export the cookies for youtube.com.</li>
-        <li>Paste the whole file below and save. Then close that private window without signing out.</li></ol>
+
+  const ytdlpVer = diag?.ytdlp_version || "Installed";
+  const jsActive = diag?.js_runtimes?.active;
+  const jsVer = jsActive ? (diag.js_runtimes[jsActive]?.version || jsActive) : null;
+  const jsBadge = jsActive
+    ? `<span class="badge" style="background:#0f3820;color:#34d399;padding:2px 8px;border-radius:4px;font-size:12px;">JS: ${esc(jsActive.toUpperCase())} ${esc(jsVer)}</span>`
+    : `<span class="badge" style="background:#3b1e08;color:#fbbf24;padding:2px 8px;border-radius:4px;font-size:12px;">⚠️ No JS Runtime (Install Node or Deno)</span>`;
+
+  const cookieStatus = st?.saved
+    ? `<span style="color:#34d399">🟢 Cookies saved (${st.count || "Active"}, updated ${new Date(st.updated * 1000).toLocaleDateString()})</span>`
+    : (st?.browser
+        ? `<span style="color:#60a5fa">🌐 Using ${st.browser.toUpperCase()} browser cookies</span>`
+        : `<span style="color:#94a3b8">⚪ No cookies configured</span>`);
+
+  const act = `<button class="btn sm ${st?.saved ? "ghost" : "primary"}" data-act="appsetup" data-p="ytdl">${ic("cog")}${st?.saved ? "Configure" : "Add cookies"}</button>`
+    + (st?.saved ? `<button class="btn sm ghost" data-act="ytcookies" data-remove="1">Remove</button>` : "");
+
+  const panel = open ? `<div class="appsetup" style="margin-top:12px">
+      <p class="sub">YouTube blocks automated downloads with bot challenges. PeakCut uses local JavaScript runtimes (Node.js/Deno) and browser cookies to bypass challenges reliably.</p>
+
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin:12px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:600">yt-dlp ${esc(ytdlpVer)}</span>
+            ${jsBadge}
+          </div>
+          <button class="btn sm" data-act="update-ytdlp" id="btnUpdateYtdlp" title="Fetch latest yt-dlp release from PyPI">${ic("refresh") || "↻"} Update yt-dlp</button>
+        </div>
+
+        <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
+          <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Browser cookies fallback (local mode):</label>
+          <div class="row" style="gap:8px;align-items:center;">
+            <select id="yt_browser" style="background:#18181b;color:#f4f4f5;border:1px solid #27272a;border-radius:6px;padding:6px 10px;font-size:13px;">
+              <option value="" ${!st?.browser ? "selected" : ""}>None (use uploaded cookies.txt)</option>
+              <option value="edge" ${st?.browser === "edge" ? "selected" : ""}>Microsoft Edge</option>
+              <option value="chrome" ${st?.browser === "chrome" ? "selected" : ""}>Google Chrome</option>
+              <option value="firefox" ${st?.browser === "firefox" ? "selected" : ""}>Mozilla Firefox</option>
+              <option value="brave" ${st?.browser === "brave" ? "selected" : ""}>Brave Browser</option>
+            </select>
+            <button class="btn sm ghost" data-act="ytbrowser">Save Browser Choice</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin:16px 0;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
+        <b style="display:block;margin-bottom:4px;">Test YouTube Link Extraction</b>
+        <p class="sub" style="margin-bottom:8px;">Test if format extraction and player clients succeed on any link without downloading.</p>
+        <div class="row" style="gap:8px;">
+          <input type="text" id="yt_test_url" placeholder="https://www.youtube.com/watch?v=..." style="flex:1;background:#18181b;color:#f4f4f5;border:1px solid #27272a;border-radius:6px;padding:6px 12px;font-size:13px;">
+          <button class="btn sm primary" data-act="test-yt-link" id="btnTestYtLink">Test Link</button>
+        </div>
+        <div id="yt_test_res" style="display:none;margin-top:10px;font-size:13px;border-radius:6px;padding:10px;"></div>
+      </div>
+
+      <ol style="font-size:13px;color:#cbd5e1;padding-left:18px;margin:12px 0;">
+        <li>In a private browser window, sign in to YouTube with a spare Google account.</li>
+        <li>With an extension such as <b>Get cookies.txt LOCALLY</b>, export cookies for youtube.com.</li>
+        <li>Paste the entire file below and click Save.</li>
+      </ol>
       <label class="f">cookies.txt<textarea id="ytc" rows="6" spellcheck="false" autocomplete="off" placeholder="# Netscape HTTP Cookie File"></textarea></label>
-      <div class="row"><button class="btn primary" data-act="ytcookies">Save</button><button class="btn ghost" data-act="appsetup" data-p="">Close</button></div></div>` : "";
-  return `<section class="set-sec"><h2>YouTube links</h2><p class="help">Only needed when YouTube links (videos or lives) fail with "YouTube isn't letting PeakCut download".</p>
+      <div class="row" style="margin-top:8px"><button class="btn primary" data-act="ytcookies">Save Cookies</button><button class="btn ghost" data-act="appsetup" data-p="">Close</button></div>
+    </div>` : "";
+
+  return `<section class="set-sec"><h2>YouTube Extraction & Diagnostics</h2><p class="help">Ensure reliable YouTube link imports and bypass bot checks.</p>
     <div class="apps"><div class="appcard"><span class="applogo" style="background:#FF0000">${logo}</span>
-    <div class="apptx"><b>YouTube cookies</b><span>${st.saved ? `Saved ${new Date(st.updated * 1000).toLocaleString()}. Used for every YouTube link.` : "None saved."}</span></div>
+    <div class="apptx"><b>YouTube Connection Status</b><span>${cookieStatus} &bull; yt-dlp ${esc(ytdlpVer)}</span></div>
     <div class="appact">${act}</div>${panel}</div></div></section>`;
 }
 async function saveSettings() { const d = {}; $$("#sform [data-s]").forEach(i => d[i.dataset.s] = i.value); await send("/api/settings", d, "PUT"); }
@@ -4237,8 +4292,62 @@ document.addEventListener("click", async e => {
     if (a === "appsetup") { S.setupOpen = d.p && S.setupOpen !== d.p ? d.p : ""; return drawSettings(); }
     if (a === "copytext") { await navigator.clipboard.writeText(d.t); return toast("Copied", "ok"); }
     if (a === "ytcookies") {
-      await send("/api/youtube-cookies", d.remove ? {remove: true} : {text: $("#ytc").value}, "PUT");
+      await send("/api/youtube-cookies", d.remove ? {remove: true} : {text: $("#ytc").value, browser: $("#yt_browser")?.value}, "PUT");
       S.setupOpen = ""; toast(d.remove ? "YouTube cookies removed." : "Saved. YouTube links will use them now.", "ok"); return drawSettings();
+    }
+    if (a === "ytbrowser") {
+      await send("/api/youtube-cookies", {browser: $("#yt_browser")?.value || ""}, "PUT");
+      toast("Browser cookies fallback saved.", "ok"); return drawSettings();
+    }
+    if (a === "update-ytdlp") {
+      const btn = $("#btnUpdateYtdlp");
+      if (btn) { btn.disabled = true; btn.innerText = "Updating..."; }
+      try {
+        const res = await api("/api/system/update-ytdlp", {method: "POST"});
+        toast(`yt-dlp: ${res.version} ${res.updated ? "(Updated)" : "(Up to date)"}`, "ok");
+      } catch (err) {
+        toast(`Update failed: ${err.message}`, "err");
+      } finally {
+        return drawSettings();
+      }
+    }
+    if (a === "test-yt-link") {
+      const u = $("#yt_test_url")?.value?.trim();
+      const resBox = $("#yt_test_res");
+      const btn = $("#btnTestYtLink");
+      if (!u) return toast("Enter a YouTube URL to test.", "err");
+      if (btn) { btn.disabled = true; btn.innerText = "Testing..."; }
+      if (resBox) {
+        resBox.style.display = "block";
+        resBox.style.background = "#1e293b";
+        resBox.style.border = "1px solid #334155";
+        resBox.style.color = "#94a3b8";
+        resBox.innerHTML = "Probing video formats with yt-dlp...";
+      }
+      try {
+        const res = await send("/api/youtube/test", {url: u}, "POST");
+        if (res.ok) {
+          resBox.style.background = "#052e16";
+          resBox.style.border = "1px solid #166534";
+          resBox.style.color = "#86efac";
+          resBox.innerHTML = `<b>✓ Extraction Successful!</b><br>${esc(res.title)} (${Math.round(res.duration)}s) &bull; Uploader: ${esc(res.uploader)}<br><small style="color:#bbf7d0">${res.video_formats} video formats, ${res.audio_formats} audio formats available via ${esc(res.client_used)}</small>`;
+        } else {
+          resBox.style.background = "#3b070c";
+          resBox.style.border = "1px solid #991b1b";
+          resBox.style.color = "#fca5a5";
+          resBox.innerHTML = `<b>✗ Extraction Failed</b><br>${esc(res.error)}<br><small style="color:#fecaca;margin-top:4px;display:block;">Technical detail: ${esc(res.raw_error || "")}</small>`;
+        }
+      } catch (err) {
+        if (resBox) {
+          resBox.style.background = "#3b070c";
+          resBox.style.border = "1px solid #991b1b";
+          resBox.style.color = "#fca5a5";
+          resBox.innerHTML = `<b>✗ Test Error:</b> ${esc(err.message)}`;
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = "Test Link"; }
+      }
+      return;
     }
     if (a === "appsave") {
       await send("/api/apps", {platform: d.p, client_id: $("#app_id").value, client_secret: $("#app_secret").value}, "PUT");
